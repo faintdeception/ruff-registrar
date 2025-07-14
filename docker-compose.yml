@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: studentregistrar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-in-production}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-changeme-in-production}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme-in-production}
+      KC_HOSTNAME: localhost
+      KC_HTTP_PORT: 8080
+    command: start-dev
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
+  api:
+    build:
+      context: .
+      dockerfile: src/StudentRegistrar.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    depends_on:
+      - postgres
+      - keycloak
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=studentregistrar;Username=postgres;Password=${POSTGRES_PASSWORD:-changeme-in-production}
+      - Keycloak__Authority=http://keycloak:8080/realms/master
+      - Keycloak__Realm=master
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
+      - NEXT_PUBLIC_KEYCLOAK_REALM=master
+      - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=student-registrar
+
+volumes:
+  postgres_data:
+  keycloak_data:
