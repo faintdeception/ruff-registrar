@@ -425,6 +425,9 @@ Thumbs.db
 .env.production
 .env.development
 appsettings.secrets.json
+# AppHost configuration files with secrets
+src/StudentRegistrar.AppHost/appsettings.json
+src/StudentRegistrar.AppHost/appsettings.*.json
 *.pfx
 *.p12
 *.key

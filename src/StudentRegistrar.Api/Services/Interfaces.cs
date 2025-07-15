@@ -1,3 +1,4 @@
+using StudentRegistrar.Models;
 using StudentRegistrar.Api.DTOs;
 
 namespace StudentRegistrar.Api.Services;
@@ -40,4 +41,12 @@ public interface IGradeService
     Task<GradeRecordDto> CreateGradeAsync(CreateGradeRecordDto createGradeDto);
     Task<GradeRecordDto?> UpdateGradeAsync(int id, CreateGradeRecordDto updateGradeDto);
     Task<bool> DeleteGradeAsync(int id);
+}
+
+public interface IKeycloakService
+{
+    Task<string> CreateUserAsync(CreateUserRequest request);
+    Task UpdateUserRoleAsync(string keycloakId, UserRole role);
+    Task DeactivateUserAsync(string keycloakId);
+    Task<bool> UserExistsAsync(string email);
 }

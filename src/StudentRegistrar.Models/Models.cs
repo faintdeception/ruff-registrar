@@ -42,12 +42,16 @@ public class Student
     [StringLength(20)]
     public string? EmergencyContactPhone { get; set; }
     
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    
+    // Link to user account (optional - students might not have accounts)
+    public Guid? UserId { get; set; }
+    public virtual User? User { get; set; }
     
     // Navigation properties
-    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-    public ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
+    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public virtual ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
 }
 
 public class Course
@@ -67,6 +71,10 @@ public class Course
     
     public int CreditHours { get; set; }
     
+    // Link to educator who created/manages the course
+    public Guid? CreatedByUserId { get; set; }
+    public virtual User? CreatedByUser { get; set; }
+    
     [Required]
     [StringLength(100)]
     public string Instructor { get; set; } = string.Empty;
@@ -77,12 +85,12 @@ public class Course
     [Required]
     public string Semester { get; set; } = string.Empty; // Fall, Spring, Summer
     
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation properties
-    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
-    public ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
+    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public virtual ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
 }
 
 public class Enrollment
@@ -146,3 +154,50 @@ public class AcademicYear
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
+
+// User Management Models
+public class User
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string KeycloakId { get; set; } = string.Empty; // Links to Keycloak user
+    public UserRole Role { get; set; } = UserRole.Student;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsActive { get; set; } = true;
+    
+    // Navigation properties
+    public virtual ICollection<Student> Students { get; set; } = new List<Student>();
+    public virtual ICollection<Course> CoursesCreated { get; set; } = new List<Course>();
+    public virtual UserProfile? UserProfile { get; set; }
+}
+
+public enum UserRole
+{
+    Student = 0,
+    Parent = 1,
+    Educator = 2,
+    Administrator = 3
+}
+
+public class UserProfile
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? ZipCode { get; set; }
+    public string? Country { get; set; } = "US";
+    public DateTime? DateOfBirth { get; set; }
+    public string? Bio { get; set; }
+    public string? ProfilePictureUrl { get; set; }
+    
+    // Navigation property
+    public virtual User User { get; set; } = null!;
+}
+
+// ...existing code...

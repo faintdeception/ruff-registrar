@@ -57,7 +57,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
       - NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-      - NEXT_PUBLIC_KEYCLOAK_REALM=master
+      - NEXT_PUBLIC_KEYCLOAK_REALM=student-registrar
       - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=student-registrar
 
 volumes:

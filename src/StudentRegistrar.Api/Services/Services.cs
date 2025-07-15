@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using StudentRegistrar.Api.DTOs;
 using StudentRegistrar.Data;
 using StudentRegistrar.Models;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace StudentRegistrar.Api.Services;
 
@@ -332,5 +335,210 @@ public class GradeService : IGradeService
         _context.GradeRecords.Remove(grade);
         await _context.SaveChangesAsync();
         return true;
+    }
+}
+
+public class KeycloakService : IKeycloakService
+{
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<KeycloakService> _logger;
+    private readonly string _keycloakUrl;
+    private readonly string _realm;
+    private readonly string _clientId;
+    private readonly string _clientSecret;
+
+    public KeycloakService(
+        HttpClient httpClient, 
+        IConfiguration configuration, 
+        ILogger<KeycloakService> logger)
+    {
+        _httpClient = httpClient;
+        _configuration = configuration;
+        _logger = logger;
+        _keycloakUrl = configuration.GetConnectionString("keycloak") ?? "http://localhost:8080";
+        _realm = configuration["Keycloak:Realm"] ?? "student-registrar";
+        _clientId = configuration["Keycloak:ClientId"] ?? "student-registrar";
+        _clientSecret = configuration["Keycloak:ClientSecret"] ?? "";
+    }
+
+    public async Task<string> CreateUserAsync(CreateUserRequest request)
+    {
+        try
+        {
+            var accessToken = await GetAdminAccessTokenAsync();
+            
+            var userPayload = new
+            {
+                username = request.Email,
+                email = request.Email,
+                firstName = request.FirstName,
+                lastName = request.LastName,
+                enabled = true,
+                credentials = new[]
+                {
+                    new
+                    {
+                        type = "password",
+                        value = request.Password,
+                        temporary = false
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(userPayload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            
+            var response = await _httpClient.PostAsync($"{_keycloakUrl}/admin/realms/{_realm}/users", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var locationHeader = response.Headers.Location?.ToString();
+                if (locationHeader != null)
+                {
+                    var userId = locationHeader.Split('/').Last();
+                    
+                    // Assign role
+                    await AssignUserRoleAsync(userId, request.Role, accessToken);
+                    
+                    return userId;
+                }
+            }
+            
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed to create user in Keycloak: {response.StatusCode} - {errorContent}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user in Keycloak");
+            throw;
+        }
+    }
+
+    public async Task UpdateUserRoleAsync(string keycloakId, UserRole role)
+    {
+        try
+        {
+            var accessToken = await GetAdminAccessTokenAsync();
+            await AssignUserRoleAsync(keycloakId, role, accessToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user role in Keycloak");
+            throw;
+        }
+    }
+
+    public async Task DeactivateUserAsync(string keycloakId)
+    {
+        try
+        {
+            var accessToken = await GetAdminAccessTokenAsync();
+            
+            var userPayload = new { enabled = false };
+            var json = JsonSerializer.Serialize(userPayload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            
+            var response = await _httpClient.PutAsync($"{_keycloakUrl}/admin/realms/{_realm}/users/{keycloakId}", content);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to deactivate user in Keycloak: {response.StatusCode} - {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating user in Keycloak");
+            throw;
+        }
+    }
+
+    public async Task<bool> UserExistsAsync(string email)
+    {
+        try
+        {
+            var accessToken = await GetAdminAccessTokenAsync();
+            
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            
+            var response = await _httpClient.GetAsync($"{_keycloakUrl}/admin/realms/{_realm}/users?email={Uri.EscapeDataString(email)}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var users = JsonSerializer.Deserialize<JsonElement[]>(content);
+                return users.Length > 0;
+            }
+            
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if user exists in Keycloak");
+            return false;
+        }
+    }
+
+    private async Task<string> GetAdminAccessTokenAsync()
+    {
+        var tokenEndpoint = $"{_keycloakUrl}/realms/{_realm}/protocol/openid-connect/token";
+        
+        var parameters = new[]
+        {
+            new KeyValuePair<string, string>("grant_type", "client_credentials"),
+            new KeyValuePair<string, string>("client_id", _clientId),
+            new KeyValuePair<string, string>("client_secret", _clientSecret)
+        };
+
+        var content = new FormUrlEncodedContent(parameters);
+        var response = await _httpClient.PostAsync(tokenEndpoint, content);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed to get admin access token: {response.StatusCode} - {errorContent}");
+        }
+        
+        var tokenResponse = await response.Content.ReadAsStringAsync();
+        var tokenData = JsonSerializer.Deserialize<JsonElement>(tokenResponse);
+        
+        return tokenData.GetProperty("access_token").GetString() ?? throw new Exception("No access token received");
+    }
+
+    private async Task AssignUserRoleAsync(string userId, UserRole role, string accessToken)
+    {
+        var roleName = role.ToString();
+        
+        // Get role representation
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var roleResponse = await _httpClient.GetAsync($"{_keycloakUrl}/admin/realms/{_realm}/roles/{roleName}");
+        
+        if (!roleResponse.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Role {RoleName} not found in Keycloak, skipping role assignment", roleName);
+            return;
+        }
+        
+        var roleContent = await roleResponse.Content.ReadAsStringAsync();
+        var roleData = JsonSerializer.Deserialize<JsonElement>(roleContent);
+        
+        var roleAssignment = new[]
+        {
+            new
+            {
+                id = roleData.GetProperty("id").GetString(),
+                name = roleData.GetProperty("name").GetString()
+            }
+        };
+        
+        var json = JsonSerializer.Serialize(roleAssignment);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        await _httpClient.PostAsync($"{_keycloakUrl}/admin/realms/{_realm}/users/{userId}/role-mappings/realm", content);
     }
 }

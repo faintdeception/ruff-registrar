@@ -135,17 +135,66 @@ docker-compose up postgres keycloak -d
 
 ### 5. Configure Keycloak
 
-1. Open Keycloak Admin Console: http://localhost:8080
-2. Login with auto-generated admin credentials (check Aspire dashboard for credentials)
-3. Create a new realm called `student-registrar` or use the master realm
-4. Create a new client:
-   - Client ID: `student-registrar`
-   - Client Protocol: `openid-connect`
-   - Access Type: `public`
-   - Valid Redirect URIs: `http://localhost:3000/*`
-   - Web Origins: `http://localhost:3000`
+1. Start the application first:
+   ```bash
+   dotnet run --project src/StudentRegistrar.AppHost
+   ```
 
-### 6. Run the Application
+2. Run the automated Keycloak setup script:
+   ```bash
+   ./setup-keycloak.sh
+   ```
+
+   The script will:
+   - Create the `student-registrar` realm
+   - Create user roles (Administrator, Educator, Parent, Student)
+   - Create the `student-registrar` client
+   - Generate and display the client secret
+   - Provide configuration commands
+
+3. **Alternative Manual Setup:**
+   - Open Keycloak Admin Console: http://localhost:8080
+   - Login with auto-generated admin credentials (check Aspire dashboard for credentials)
+   - Create a new realm called `student-registrar`
+   - Create roles: Administrator, Educator, Parent, Student
+   - Create a new client:
+     - Client ID: `student-registrar`
+     - Client Protocol: `openid-connect`
+     - Access Type: `confidential`
+     - Valid Redirect URIs: `http://localhost:3000/*`, `http://localhost:3001/*`
+     - Web Origins: `http://localhost:3000`, `http://localhost:3001`
+     - Service Accounts Enabled: `On`
+
+**Note:** Keycloak configuration persists across restarts thanks to persistent data volumes.
+
+### 6. Configure AppHost Settings
+
+The AppHost requires Keycloak client configuration. Create the configuration file:
+
+1. **Copy the example configuration:**
+   ```bash
+   cp src/StudentRegistrar.AppHost/appsettings.example.json src/StudentRegistrar.AppHost/appsettings.json
+   ```
+
+2. **Update the configuration:**
+   Edit `src/StudentRegistrar.AppHost/appsettings.json` with your Keycloak client secret:
+   ```json
+   {
+     "Keycloak": {
+       "Realm": "student-registrar",
+       "ClientId": "student-registrar",
+       "ClientSecret": "YOUR_ACTUAL_CLIENT_SECRET_HERE"
+     }
+   }
+   ```
+
+3. **Get the client secret:**
+   - Run the setup script: `./setup-keycloak.sh` (it will display the secret)
+   - Or manually from Keycloak Admin Console → student-registrar realm → Clients → student-registrar → Credentials tab
+
+**Note:** The `appsettings.json` file is gitignored to prevent accidental secret exposure.
+
+### 7. Run the Application
 
 #### Using .NET Aspire (Recommended for Development)
 

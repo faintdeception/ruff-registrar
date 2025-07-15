@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using StudentRegistrar.Models;
 
 namespace StudentRegistrar.Api.DTOs;
 
@@ -235,4 +236,94 @@ public class CreateGradeRecordDto
     
     [Required]
     public DateTime GradeDate { get; set; }
+}
+
+// User Management DTOs
+public class CreateUserRequest
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+    
+    [Required]
+    [StringLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+    
+    [Required]
+    [StringLength(100)]
+    public string LastName { get; set; } = string.Empty;
+    
+    [Required]
+    public UserRole Role { get; set; }
+    
+    [Required]
+    [StringLength(100, MinimumLength = 8)]
+    public string Password { get; set; } = string.Empty;
+    
+    public UserProfileDto? Profile { get; set; }
+}
+
+public class UserDto
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string FullName => $"{FirstName} {LastName}";
+    public UserRole Role { get; set; }
+    public string RoleDisplay => Role.ToString();
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public bool IsActive { get; set; }
+    public UserProfileDto? Profile { get; set; }
+    
+    // Additional properties for authentication
+    public string Username { get; set; } = string.Empty;
+    public string KeycloakId { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+}
+
+public class UpdateUserRequest
+{
+    [StringLength(100)]
+    public string? FirstName { get; set; }
+    
+    [StringLength(100)]
+    public string? LastName { get; set; }
+    
+    public UserRole? Role { get; set; }
+    public bool? IsActive { get; set; }
+    public UserProfileDto? Profile { get; set; }
+}
+
+public class UserProfileDto
+{
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? ZipCode { get; set; }
+    public string? Country { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Bio { get; set; }
+    public string? ProfilePictureUrl { get; set; }
+}
+
+public class LoginResponse
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public UserDto User { get; set; } = null!;
+}
+
+public class AuthUserInfo
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public UserRole Role { get; set; }
+    public string KeycloakId { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
 }

@@ -36,6 +36,10 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
+builder.Services.AddScoped<IKeycloakService, KeycloakService>();
+
+// Add HttpClient for Keycloak
+builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -54,7 +58,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         var keycloakUrl = builder.Configuration.GetConnectionString("keycloak") ?? "http://localhost:8080";
-        var realm = builder.Configuration["Keycloak:Realm"] ?? "master";
+        var realm = builder.Configuration["Keycloak:Realm"] ?? "student-registrar";
         
         options.Authority = $"{keycloakUrl}/realms/{realm}";
         options.Audience = "student-registrar";
@@ -64,6 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuer = true,
             ValidateAudience = true,
+            ValidAudiences = new[] { "student-registrar", "account" }, // Accept both audiences
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero

@@ -14,6 +14,8 @@ public class StudentRegistrarDbContext : DbContext
     public DbSet<Enrollment> Enrollments { get; set; }
     public DbSet<GradeRecord> GradeRecords { get; set; }
     public DbSet<AcademicYear> AcademicYears { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<UserProfile> UserProfiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -115,6 +117,53 @@ public class StudentRegistrarDbContext : DbContext
 
             entity.HasIndex(e => e.Name).IsUnique();
         });
+
+        // Configure User
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(320);
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.KeycloakId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Role).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.KeycloakId).IsUnique();
+
+            // Configure relationships
+            entity.HasMany(u => u.Students)
+                .WithOne(s => s.User)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(u => u.CoursesCreated)
+                .WithOne(c => c.CreatedByUser)
+                .HasForeignKey(c => c.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure UserProfile
+        modelBuilder.Entity<UserProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.State).HasMaxLength(50);
+            entity.Property(e => e.ZipCode).HasMaxLength(10);
+            entity.Property(e => e.Country).HasMaxLength(100);
+            entity.Property(e => e.Bio).HasMaxLength(1000);
+            entity.Property(e => e.ProfilePictureUrl).HasMaxLength(500);
+
+            entity.HasOne(p => p.User)
+                .WithOne()
+                .HasForeignKey<UserProfile>(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     public override int SaveChanges()
@@ -133,7 +182,7 @@ public class StudentRegistrarDbContext : DbContext
     {
         var entries = ChangeTracker.Entries()
             .Where(e => e.Entity is Student || e.Entity is Course || e.Entity is Enrollment || 
-                       e.Entity is GradeRecord || e.Entity is AcademicYear)
+                       e.Entity is GradeRecord || e.Entity is AcademicYear || e.Entity is User)
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
         foreach (var entry in entries)
