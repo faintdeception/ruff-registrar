@@ -24,6 +24,7 @@ public class StudentRegistrarDbContext : DbContext
     public DbSet<Student> NewStudents { get; set; }
     public DbSet<Course> NewCourses { get; set; }
     public DbSet<CourseInstructor> CourseInstructors { get; set; }
+    public DbSet<Educator> Educators { get; set; }
     public DbSet<Enrollment> NewEnrollments { get; set; }
     public DbSet<Payment> Payments { get; set; }
 

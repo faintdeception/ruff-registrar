@@ -1,6 +1,7 @@
 using AutoMapper;
 using StudentRegistrar.Models;
 using StudentRegistrar.Api.DTOs;
+using System.Text.Json;
 
 namespace StudentRegistrar.Api.DTOs;
 
@@ -54,20 +55,19 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
             .ForMember(dest => dest.User, opt => opt.Ignore());
 
-        // CourseInstructor mappings
+                // CourseInstructor mappings
         CreateMap<CourseInstructor, CourseInstructorDto>()
-            .ForMember(dest => dest.InstructorInfo, opt => opt.MapFrom(src => src.GetInstructorInfo()));
+            .ForMember(dest => dest.InstructorInfo, opt => opt.MapFrom(src => src.GetInstructorInfo()))
+            .ForMember(dest => dest.Course, opt => opt.Ignore()); // Prevent circular reference
         CreateMap<CreateCourseInstructorDto, CourseInstructor>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Course, opt => opt.Ignore())
-            .ForMember(dest => dest.InstructorInfoJson, opt => opt.Ignore())
-            .AfterMap((src, dest) => 
-            {
+            .AfterMap((src, dest) => {
                 if (src.InstructorInfo != null)
                 {
-                    var modelInfo = new StudentRegistrar.Models.InstructorInfo
+                    var modelInfo = new Models.InstructorInfo
                     {
                         Bio = src.InstructorInfo.Bio,
                         Qualifications = src.InstructorInfo.Qualifications,
@@ -76,24 +76,72 @@ public class MappingProfile : Profile
                     dest.SetInstructorInfo(modelInfo);
                 }
             });
+            
+        // Create mapping for Update DTO
         CreateMap<UpdateCourseInstructorDto, CourseInstructor>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CourseId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Course, opt => opt.Ignore())
-            .ForMember(dest => dest.InstructorInfoJson, opt => opt.Ignore())
-            .AfterMap((src, dest) => 
-            {
+            .AfterMap((src, dest) => {
                 if (src.InstructorInfo != null)
                 {
-                    var modelInfo = new StudentRegistrar.Models.InstructorInfo
+                    var modelInfo = new Models.InstructorInfo
                     {
                         Bio = src.InstructorInfo.Bio,
                         Qualifications = src.InstructorInfo.Qualifications,
                         CustomFields = src.InstructorInfo.CustomFields
                     };
                     dest.SetInstructorInfo(modelInfo);
+                }
+            });
+
+        // DTO to Model mappings for InstructorInfo and EducatorInfo
+        CreateMap<DTOs.InstructorInfo, Models.InstructorInfo>();
+        CreateMap<Models.InstructorInfo, DTOs.InstructorInfo>();
+        CreateMap<DTOs.EducatorInfo, Models.EducatorInfo>();
+        CreateMap<Models.EducatorInfo, DTOs.EducatorInfo>();
+
+        // Educator mappings (replaces CourseInstructor system)
+        CreateMap<Educator, EducatorDto>()
+            .ForMember(dest => dest.EducatorInfo, opt => opt.MapFrom(src => src.GetEducatorInfo()));
+        CreateMap<CreateEducatorDto, Educator>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.Course, opt => opt.Ignore())
+            .AfterMap((src, dest) => {
+                if (src.EducatorInfo != null)
+                {
+                    var modelInfo = new Models.EducatorInfo
+                    {
+                        Bio = src.EducatorInfo.Bio,
+                        Qualifications = src.EducatorInfo.Qualifications,
+                        Specializations = src.EducatorInfo.Specializations,
+                        Department = src.EducatorInfo.Department,
+                        CustomFields = src.EducatorInfo.CustomFields
+                    };
+                    dest.SetEducatorInfo(modelInfo);
+                }
+            });
+        CreateMap<UpdateEducatorDto, Educator>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.Course, opt => opt.Ignore())
+            .AfterMap((src, dest) => {
+                if (src.EducatorInfo != null)
+                {
+                    var modelInfo = new Models.EducatorInfo
+                    {
+                        Bio = src.EducatorInfo.Bio,
+                        Qualifications = src.EducatorInfo.Qualifications,
+                        Specializations = src.EducatorInfo.Specializations,
+                        Department = src.EducatorInfo.Department,
+                        CustomFields = src.EducatorInfo.CustomFields
+                    };
+                    dest.SetEducatorInfo(modelInfo);
                 }
             });
         // AccountHolder mappings
@@ -181,7 +229,8 @@ public class MappingProfile : Profile
         
         // New Course System mappings
         CreateMap<Semester, SemesterDto>()
-            .ForMember(dest => dest.IsRegistrationOpen, opt => opt.MapFrom(src => src.IsRegistrationOpen));
+            .ForMember(dest => dest.IsRegistrationOpen, opt => opt.MapFrom(src => src.IsRegistrationOpen))
+            .ForMember(dest => dest.Courses, opt => opt.Ignore()); // Ignore to prevent circular reference
         CreateMap<CreateSemesterDto, Semester>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Courses, opt => opt.Ignore())
@@ -202,7 +251,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CurrentEnrollment, opt => opt.MapFrom(src => src.CurrentEnrollment))
             .ForMember(dest => dest.AvailableSpots, opt => opt.MapFrom(src => src.AvailableSpots))
             .ForMember(dest => dest.IsFull, opt => opt.MapFrom(src => src.IsFull))
-            .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors));
+            .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors))
+            .ForMember(dest => dest.InstructorNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.FullName).ToList()))
+            .ForMember(dest => dest.Semester, opt => opt.Ignore()); // Ignore to prevent circular reference
         CreateMap<CreateNewCourseDto, Course>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Semester, opt => opt.Ignore())

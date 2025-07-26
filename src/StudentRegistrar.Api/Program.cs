@@ -38,6 +38,7 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
 builder.Services.AddScoped<IKeycloakService, KeycloakService>();
 builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
+builder.Services.AddScoped<IEducatorService, EducatorService>();
 builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
 // New course system services
 builder.Services.AddScoped<ISemesterService, SemesterService>();
@@ -51,7 +52,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Next.js default port
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001") // Support both common Next.js ports
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

@@ -1,43 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { EducatorDto, CreateEducatorDto, EducatorInfo } from '@/types';
 
-interface InstructorInfo {
-  bio?: string;
-  qualifications: string[];
-  customFields: Record<string, string>;
-}
-
-interface CourseInstructorDto {
-  id: string;
-  courseId: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  isPrimary: boolean;
-  createdAt: string;
-  updatedAt: string;
-  instructorInfo: InstructorInfo;
-  course?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-}
-
-interface CreateCourseInstructorDto {
+interface CreateEducatorFormData {
   courseId: string;
   firstName: string;
   lastName: string;
   email?: string;
   phone?: string;
   isPrimary: boolean;
-  instructorInfo?: InstructorInfo;
+  isActive: boolean;
+  educatorInfo?: EducatorInfo;
 }
 
 const AdminEducatorsPage = () => {
-  const [instructors, setInstructors] = useState<CourseInstructorDto[]>([]);
+  const [instructors, setInstructors] = useState<EducatorDto[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +22,19 @@ const AdminEducatorsPage = () => {
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  const [newInstructor, setNewInstructor] = useState<CreateCourseInstructorDto>({
+  const [newInstructor, setNewInstructor] = useState<CreateEducatorFormData>({
     courseId: '',
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     isPrimary: false,
-    instructorInfo: {
+    isActive: true,
+    educatorInfo: {
       bio: '',
       qualifications: [],
+      specializations: [],
+      department: '',
       customFields: {}
     }
   });
@@ -75,7 +55,7 @@ const AdminEducatorsPage = () => {
 
   const loadInstructors = async (authToken: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/CourseInstructors`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Educators`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -86,11 +66,11 @@ const AdminEducatorsPage = () => {
         const data = await response.json();
         setInstructors(data);
       } else {
-        setError('Failed to load instructors');
+        setError('Failed to load educators');
       }
     } catch (err) {
-      setError('Error loading instructors');
-      console.error('Error loading instructors:', err);
+      setError('Error loading educators');
+      console.error('Error loading educators:', err);
     } finally {
       setIsLoading(false);
     }
@@ -119,13 +99,31 @@ const AdminEducatorsPage = () => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/CourseInstructors`, {
+      // Create payload that matches CreateEducatorDto
+      const payload = {
+        courseId: newInstructor.courseId || null,
+        firstName: newInstructor.firstName,
+        lastName: newInstructor.lastName,
+        email: newInstructor.email || null,
+        phone: newInstructor.phone || null,
+        isPrimary: newInstructor.isPrimary,
+        isActive: newInstructor.isActive,
+        educatorInfo: {
+          bio: newInstructor.educatorInfo?.bio || '',
+          qualifications: newInstructor.educatorInfo?.qualifications || [],
+          specializations: newInstructor.educatorInfo?.specializations || [],
+          department: newInstructor.educatorInfo?.department || '',
+          customFields: newInstructor.educatorInfo?.customFields || {}
+        }
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Educators`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newInstructor)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -139,9 +137,12 @@ const AdminEducatorsPage = () => {
           email: '',
           phone: '',
           isPrimary: false,
-          instructorInfo: {
+          isActive: true,
+          educatorInfo: {
             bio: '',
             qualifications: [],
+            specializations: [],
+            department: '',
             customFields: {}
           }
         });
@@ -158,7 +159,7 @@ const AdminEducatorsPage = () => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/CourseInstructors/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Educators/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -213,15 +214,14 @@ const AdminEducatorsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Course
+                  Course (Optional)
                 </label>
                 <select
                   value={newInstructor.courseId}
                   onChange={(e) => setNewInstructor({...newInstructor, courseId: e.target.value})}
-                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select Course</option>
+                  <option value="">No Course Assignment</option>
                   {courses.map(course => (
                     <option key={course.id} value={course.id}>
                       {course.code} - {course.name}
@@ -299,11 +299,11 @@ const AdminEducatorsPage = () => {
                 Bio
               </label>
               <textarea
-                value={newInstructor.instructorInfo?.bio || ''}
+                value={newInstructor.educatorInfo?.bio || ''}
                 onChange={(e) => setNewInstructor({
                   ...newInstructor,
-                  instructorInfo: {
-                    ...newInstructor.instructorInfo!,
+                  educatorInfo: {
+                    ...newInstructor.educatorInfo!,
                     bio: e.target.value
                   }
                 })}
@@ -372,19 +372,19 @@ const AdminEducatorsPage = () => {
                         <div className="text-sm font-medium text-gray-900">
                           {instructor.fullName}
                         </div>
-                        {instructor.instructorInfo?.bio && (
+                        {instructor.educatorInfo?.bio && (
                           <div className="text-sm text-gray-500">
-                            {instructor.instructorInfo.bio.substring(0, 100)}...
+                            {instructor.educatorInfo.bio.substring(0, 100)}...
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {instructor.course?.name || 'Unknown Course'}
+                        {instructor.course?.name || 'Unassigned'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {instructor.course?.code}
+                        {instructor.course?.code || 'No Course'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

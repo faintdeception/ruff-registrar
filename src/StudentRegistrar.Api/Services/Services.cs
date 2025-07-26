@@ -637,6 +637,128 @@ public class CourseInstructorService : ICourseInstructorService
     }
 }
 
+// Independent Educator Service (not tied to courses)
+public class EducatorService : IEducatorService
+{
+    private readonly StudentRegistrarDbContext _context;
+    private readonly IMapper _mapper;
+
+    public EducatorService(StudentRegistrarDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetAllEducatorsAsync()
+    {
+        var educators = await _context.Educators
+            .Include(e => e.Course)
+            .OrderBy(e => e.LastName)
+            .ThenBy(e => e.FirstName)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<EducatorDto?> GetEducatorByIdAsync(Guid id)
+    {
+        var educator = await _context.Educators
+            .Include(e => e.Course)
+            .FirstOrDefaultAsync(e => e.Id == id);
+        
+        return educator != null ? _mapper.Map<EducatorDto>(educator) : null;
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetEducatorsByCourseIdAsync(Guid courseId)
+    {
+        var educators = await _context.Educators
+            .Where(e => e.CourseId == courseId)
+            .Include(e => e.Course)
+            .OrderBy(e => e.IsPrimary ? 0 : 1)
+            .ThenBy(e => e.LastName)
+            .ThenBy(e => e.FirstName)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetUnassignedEducatorsAsync()
+    {
+        var educators = await _context.Educators
+            .Where(e => e.CourseId == null && e.IsActive)
+            .OrderBy(e => e.LastName)
+            .ThenBy(e => e.FirstName)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<EducatorDto> CreateEducatorAsync(CreateEducatorDto createDto)
+    {
+        var educator = _mapper.Map<Educator>(createDto);
+        educator.Id = Guid.NewGuid();
+        educator.CreatedAt = DateTime.UtcNow;
+        educator.UpdatedAt = DateTime.UtcNow;
+        
+        _context.Educators.Add(educator);
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<EducatorDto>(educator);
+    }
+
+    public async Task<EducatorDto?> UpdateEducatorAsync(Guid id, UpdateEducatorDto updateDto)
+    {
+        var educator = await _context.Educators
+            .Include(e => e.Course)
+            .FirstOrDefaultAsync(e => e.Id == id);
+        
+        if (educator == null)
+            return null;
+
+        _mapper.Map(updateDto, educator);
+        educator.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<EducatorDto>(educator);
+    }
+
+    public async Task<bool> DeleteEducatorAsync(Guid id)
+    {
+        var educator = await _context.Educators.FindAsync(id);
+        if (educator == null)
+            return false;
+
+        _context.Educators.Remove(educator);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeactivateEducatorAsync(Guid id)
+    {
+        var educator = await _context.Educators.FindAsync(id);
+        if (educator == null)
+            return false;
+
+        educator.IsActive = false;
+        educator.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ActivateEducatorAsync(Guid id)
+    {
+        var educator = await _context.Educators.FindAsync(id);
+        if (educator == null)
+            return false;
+
+        educator.IsActive = true;
+        educator.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}
+
 public class AccountHolderService : IAccountHolderService
 {
     private readonly StudentRegistrarDbContext _context;

@@ -10,7 +10,8 @@ import {
   AcademicCapIcon,
   ClockIcon,
   MapPinIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface Semester {
@@ -36,7 +37,7 @@ interface Course {
   fee: number;
   periodCode: string;
   ageGroup: string;
-  instructorNames: string[];
+  instructorNames?: string[]; // Made optional since courses can be created without instructors
   semesterName: string;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +51,8 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSemester, setActiveSemester] = useState<Semester | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const isAdmin = user?.roles.includes('Administrator');
 
@@ -164,6 +167,302 @@ export default function CoursesPage() {
     }).format(amount);
   };
 
+  const createCourse = async (courseData: {
+    name: string;
+    code?: string;
+    description?: string;
+    room?: string;
+    maxCapacity: number;
+    fee: number;
+    periodCode?: string;
+    startTime?: string;
+    endTime?: string;
+    ageGroup: string;
+  }) => {
+    try {
+      setIsCreating(true);
+      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      if (!selectedSemester) {
+        throw new Error('No semester selected');
+      }
+
+      // Convert time strings to TimeSpan format if provided
+      const createDto = {
+        semesterId: selectedSemester,
+        name: courseData.name,
+        code: courseData.code || null,
+        description: courseData.description || null,
+        room: courseData.room || null,
+        maxCapacity: courseData.maxCapacity,
+        fee: courseData.fee,
+        periodCode: courseData.periodCode || null,
+        startTime: courseData.startTime ? courseData.startTime + ':00' : null,
+        endTime: courseData.endTime ? courseData.endTime + ':00' : null,
+        ageGroup: courseData.ageGroup
+      };
+
+      const response = await fetch('/api/newcourses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(createDto)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create course');
+      }
+
+      const newCourse = await response.json();
+      
+      // Refresh the courses list
+      await fetchCoursesBySemester(selectedSemester);
+      
+      setShowCreateModal(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error creating course:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create course');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // Course Creation Modal Component
+  const CourseCreateModal = () => {
+    const [formData, setFormData] = useState({
+      name: '',
+      code: '',
+      description: '',
+      room: '',
+      maxCapacity: 20,
+      fee: 0,
+      periodCode: '',
+      startTime: '',
+      endTime: '',
+      ageGroup: ''
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!formData.name || !formData.ageGroup) {
+        setError('Course name and age group are required');
+        return;
+      }
+      await createCourse(formData);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: name === 'maxCapacity' || name === 'fee' ? Number(value) : value
+      }));
+    };
+
+    if (!showCreateModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Create New Course</h3>
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <span className="sr-only">Close</span>
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Course Name *
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="e.g., Introduction to Programming"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700">
+                  Course Code
+                </label>
+                <input
+                  type="text"
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="e.g., CS101"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="ageGroup" className="block text-sm font-medium text-gray-700">
+                  Age Group *
+                </label>
+                <select
+                  id="ageGroup"
+                  name="ageGroup"
+                  required
+                  value={formData.ageGroup}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="">Select age group...</option>
+                  <option value="Children">Children (5-12)</option>
+                  <option value="Teens">Teens (13-17)</option>
+                  <option value="Adults">Adults (18+)</option>
+                  <option value="All Ages">All Ages</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="maxCapacity" className="block text-sm font-medium text-gray-700">
+                  Max Capacity
+                </label>
+                <input
+                  type="number"
+                  id="maxCapacity"
+                  name="maxCapacity"
+                  min="1"
+                  value={formData.maxCapacity}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="room" className="block text-sm font-medium text-gray-700">
+                  Room
+                </label>
+                <input
+                  type="text"
+                  id="room"
+                  name="room"
+                  value={formData.room}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="e.g., Room 101"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fee" className="block text-sm font-medium text-gray-700">
+                  Course Fee ($)
+                </label>
+                <input
+                  type="number"
+                  id="fee"
+                  name="fee"
+                  min="0"
+                  step="0.01"
+                  value={formData.fee}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="periodCode" className="block text-sm font-medium text-gray-700">
+                  Period Code
+                </label>
+                <input
+                  type="text"
+                  id="periodCode"
+                  name="periodCode"
+                  value={formData.periodCode}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="e.g., MW 2:00-3:30 PM"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  id="startTime"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  id="endTime"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows={3}
+                value={formData.description}
+                onChange={handleChange}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Course description..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Creating...' : 'Create Course'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -194,7 +493,11 @@ export default function CoursesPage() {
                     <CalendarIcon className="h-5 w-5" />
                     Manage Semesters
                   </Link>
-                  <button className="btn btn-primary">
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    disabled={!selectedSemester}
+                    className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <PlusIcon className="h-5 w-5" />
                     Add Course
                   </button>
@@ -229,7 +532,7 @@ export default function CoursesPage() {
                 <select
                   value={selectedSemester}
                   onChange={(e) => setSelectedSemester(e.target.value)}
-                  className="form-select"
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-sm"
                 >
                   <option value="">Select a semester...</option>
                   {semesters.map((semester) => (
@@ -282,7 +585,11 @@ export default function CoursesPage() {
                 There are no courses scheduled for the selected semester.
               </p>
               {isAdmin && (
-                <button className="btn btn-primary">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={!selectedSemester}
+                  className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <PlusIcon className="h-5 w-5" />
                   Add First Course
                 </button>
@@ -347,17 +654,17 @@ export default function CoursesPage() {
                     </div>
 
                     {/* Instructors */}
-                    {course.instructorNames.length > 0 && (
+                    {course.instructorNames && course.instructorNames.length > 0 && (
                       <div className="mb-4">
                         <div className="flex items-center text-sm text-gray-600 mb-1">
                           <AcademicCapIcon className="h-4 w-4 mr-2" />
                           <span>Instructor{course.instructorNames.length > 1 ? 's' : ''}:</span>
                         </div>
                         <div className="pl-6">
-                          {course.instructorNames.map((name, index) => (
+                          {course.instructorNames?.map((name, index) => (
                             <span key={index} className="text-sm text-gray-700">
                               {name}
-                              {index < course.instructorNames.length - 1 && ', '}
+                              {index < (course.instructorNames?.length || 0) - 1 && ', '}
                             </span>
                           ))}
                         </div>
@@ -403,6 +710,9 @@ export default function CoursesPage() {
             </div>
           )}
         </div>
+
+        {/* Course Creation Modal */}
+        <CourseCreateModal />
       </div>
     </ProtectedRoute>
   );

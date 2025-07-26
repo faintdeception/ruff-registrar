@@ -72,6 +72,52 @@ export interface CreateEnrollmentDto {
   status?: string;
 }
 
+// Independent Educator types (not tied to courses)
+export interface EducatorDto {
+  id: string;
+  courseId?: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  isPrimary: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  educatorInfo: EducatorInfo;
+  isAssignedToCourse: boolean;
+  course?: any; // Course details if assigned
+}
+
+export interface CreateEducatorDto {
+  courseId?: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  isPrimary?: boolean;
+  isActive?: boolean;
+  educatorInfo?: EducatorInfo;
+}
+
+export interface UpdateEducatorDto {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  isActive?: boolean;
+  educatorInfo?: EducatorInfo;
+}
+
+export interface EducatorInfo {
+  bio?: string;
+  qualifications: string[];
+  specializations: string[];
+  department?: string;
+  customFields: Record<string, string>;
+}
+
 export interface GradeRecord {
   id: number;
   studentId: number;
