@@ -133,6 +133,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.StudentInfoJson, opt => opt.MapFrom(src => src.GetStudentInfo()))
             .ForMember(dest => dest.Enrollments, opt => opt.MapFrom(src => src.Enrollments));
             
+        CreateMap<Student, StudentDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => (int)src.Id.GetHashCode())) // Convert Guid to int for legacy compatibility
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => "")) // Student model doesn't have email, set empty
+            .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth.HasValue ? DateOnly.FromDateTime(src.DateOfBirth.Value) : new DateOnly()))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => "")) // Student model doesn't have phone, set empty
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => "")) // Student model doesn't have address, set empty
+            .ForMember(dest => dest.City, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.State, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.ZipCode, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.EmergencyContactName, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.EmergencyContactPhone, opt => opt.MapFrom(src => ""));
+            
         CreateMap<CreateStudentForAccountDto, Student>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.AccountHolderId, opt => opt.Ignore())
