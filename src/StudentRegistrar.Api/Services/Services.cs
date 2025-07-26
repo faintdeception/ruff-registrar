@@ -38,7 +38,7 @@ public class StudentService : IStudentService
 
     public async Task<StudentDto> CreateStudentAsync(CreateStudentDto createStudentDto)
     {
-        var student = _mapper.Map<Student>(createStudentDto);
+        var student = _mapper.Map<LegacyStudent>(createStudentDto);
         
         _context.Students.Add(student);
         await _context.SaveChangesAsync();
@@ -123,7 +123,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto)
     {
-        var course = _mapper.Map<Course>(createCourseDto);
+        var course = _mapper.Map<LegacyCourse>(createCourseDto);
         
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
@@ -213,7 +213,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<EnrollmentDto> CreateEnrollmentAsync(CreateEnrollmentDto createEnrollmentDto)
     {
-        var enrollment = _mapper.Map<Enrollment>(createEnrollmentDto);
+        var enrollment = _mapper.Map<LegacyEnrollment>(createEnrollmentDto);
         
         _context.Enrollments.Add(enrollment);
         await _context.SaveChangesAsync();
@@ -540,5 +540,99 @@ public class KeycloakService : IKeycloakService
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
         await _httpClient.PostAsync($"{_keycloakUrl}/admin/realms/{_realm}/users/{userId}/role-mappings/realm", content);
+    }
+}
+
+public class CourseInstructorService : ICourseInstructorService
+{
+    private readonly StudentRegistrarDbContext _context;
+    private readonly IMapper _mapper;
+
+    public CourseInstructorService(StudentRegistrarDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<CourseInstructorDto>> GetAllCourseInstructorsAsync()
+    {
+        var instructors = await _context.CourseInstructors
+            .Include(ci => ci.Course)
+            .OrderBy(ci => ci.LastName)
+            .ThenBy(ci => ci.FirstName)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<CourseInstructorDto>>(instructors);
+    }
+
+    public async Task<CourseInstructorDto?> GetCourseInstructorByIdAsync(Guid id)
+    {
+        var instructor = await _context.CourseInstructors
+            .Include(ci => ci.Course)
+            .FirstOrDefaultAsync(ci => ci.Id == id);
+        
+        return instructor != null ? _mapper.Map<CourseInstructorDto>(instructor) : null;
+    }
+
+    public async Task<IEnumerable<CourseInstructorDto>> GetCourseInstructorsByCourseIdAsync(Guid courseId)
+    {
+        var instructors = await _context.CourseInstructors
+            .Where(ci => ci.CourseId == courseId)
+            .Include(ci => ci.Course)
+            .OrderBy(ci => ci.IsPrimary ? 0 : 1)
+            .ThenBy(ci => ci.LastName)
+            .ThenBy(ci => ci.FirstName)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<CourseInstructorDto>>(instructors);
+    }
+
+    public async Task<CourseInstructorDto> CreateCourseInstructorAsync(CreateCourseInstructorDto createDto)
+    {
+        var instructor = _mapper.Map<CourseInstructor>(createDto);
+        instructor.Id = Guid.NewGuid();
+        instructor.CreatedAt = DateTime.UtcNow;
+        instructor.UpdatedAt = DateTime.UtcNow;
+        
+        _context.CourseInstructors.Add(instructor);
+        await _context.SaveChangesAsync();
+        
+        // Load the course for the response
+        if (instructor != null)
+        {
+            await _context.Entry(instructor)
+                .Reference(ci => ci.Course)
+                .LoadAsync();
+        }
+        
+        return _mapper.Map<CourseInstructorDto>(instructor);
+    }
+
+    public async Task<CourseInstructorDto?> UpdateCourseInstructorAsync(Guid id, UpdateCourseInstructorDto updateDto)
+    {
+        var instructor = await _context.CourseInstructors
+            .Include(ci => ci.Course)
+            .FirstOrDefaultAsync(ci => ci.Id == id);
+        
+        if (instructor == null)
+            return null;
+
+        _mapper.Map(updateDto, instructor);
+        instructor.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<CourseInstructorDto>(instructor);
+    }
+
+    public async Task<bool> DeleteCourseInstructorAsync(Guid id)
+    {
+        var instructor = await _context.CourseInstructors.FindAsync(id);
+        if (instructor == null)
+            return false;
+
+        _context.CourseInstructors.Remove(instructor);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

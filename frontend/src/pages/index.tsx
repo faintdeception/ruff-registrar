@@ -47,6 +47,9 @@ export default function Home() {
               </div>
               <div className="flex items-center space-x-4">
                 <nav className="flex space-x-4">
+                  <Link href="/account-holder" className="text-gray-600 hover:text-primary-600">
+                    Account
+                  </Link>
                   <Link href="/students" className="text-gray-600 hover:text-primary-600">
                     Students
                   </Link>

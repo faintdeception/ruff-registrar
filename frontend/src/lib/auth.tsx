@@ -31,6 +31,7 @@ export const useAuth = () => {
 const KEYCLOAK_URL = process.env.NEXT_PUBLIC_KEYCLOAK_URL || 'http://localhost:8080';
 const KEYCLOAK_REALM = process.env.NEXT_PUBLIC_KEYCLOAK_REALM || 'student-registrar';
 const KEYCLOAK_CLIENT_ID = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'student-registrar';
+const KEYCLOAK_CLIENT_SECRET = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET || 'hpWpXCmMHAzDy0FrwUwrBONtTdoeXBNx';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,21 +51,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserInfo = async (token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        localStorage.removeItem('token');
-        setUser(null);
-      }
+      // Parse JWT token to extract user info
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      
+      // Extract user information from Keycloak token
+      const userData = {
+        id: payload.sub,
+        username: payload.preferred_username,
+        email: payload.email,
+        firstName: payload.given_name,
+        lastName: payload.family_name,
+        roles: payload.realm_access?.roles || [],
+      };
+      
+      setUser(userData);
     } catch (error) {
-      console.error('Error fetching user info:', error);
+      console.error('Error parsing token:', error);
       localStorage.removeItem('token');
       setUser(null);
     } finally {
@@ -84,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           body: new URLSearchParams({
             grant_type: 'password',
             client_id: KEYCLOAK_CLIENT_ID,
+            client_secret: KEYCLOAK_CLIENT_SECRET,
             username,
             password,
           }),

@@ -2,7 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StudentRegistrar.Models;
 
-public class Student
+// Legacy models kept for backward compatibility during migration
+// Will be removed in Phase 2 of the refactor
+
+public class LegacyStudent
 {
     public int Id { get; set; }
     
@@ -50,11 +53,11 @@ public class Student
     public virtual User? User { get; set; }
     
     // Navigation properties
-    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public virtual ICollection<LegacyEnrollment> Enrollments { get; set; } = new List<LegacyEnrollment>();
     public virtual ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
 }
 
-public class Course
+public class LegacyCourse
 {
     public int Id { get; set; }
     
@@ -89,19 +92,19 @@ public class Course
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation properties
-    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public virtual ICollection<LegacyEnrollment> Enrollments { get; set; } = new List<LegacyEnrollment>();
     public virtual ICollection<GradeRecord> GradeRecords { get; set; } = new List<GradeRecord>();
 }
 
-public class Enrollment
+public class LegacyEnrollment
 {
     public int Id { get; set; }
     
     public int StudentId { get; set; }
-    public Student Student { get; set; } = null!;
+    public LegacyStudent Student { get; set; } = null!;
     
     public int CourseId { get; set; }
-    public Course Course { get; set; } = null!;
+    public LegacyCourse Course { get; set; } = null!;
     
     public DateTime EnrollmentDate { get; set; }
     public DateTime? CompletionDate { get; set; }
@@ -117,10 +120,10 @@ public class GradeRecord
     public int Id { get; set; }
     
     public int StudentId { get; set; }
-    public Student Student { get; set; } = null!;
+    public LegacyStudent Student { get; set; } = null!;
     
     public int CourseId { get; set; }
-    public Course Course { get; set; } = null!;
+    public LegacyCourse Course { get; set; } = null!;
     
     [StringLength(10)]
     public string? LetterGrade { get; set; } // A, B, C, D, F
@@ -169,8 +172,8 @@ public class User
     public bool IsActive { get; set; } = true;
     
     // Navigation properties
-    public virtual ICollection<Student> Students { get; set; } = new List<Student>();
-    public virtual ICollection<Course> CoursesCreated { get; set; } = new List<Course>();
+    public virtual ICollection<LegacyStudent> Students { get; set; } = new List<LegacyStudent>();
+    public virtual ICollection<LegacyCourse> CoursesCreated { get; set; } = new List<LegacyCourse>();
     public virtual UserProfile? UserProfile { get; set; }
 }
 
