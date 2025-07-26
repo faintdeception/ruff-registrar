@@ -636,3 +636,135 @@ public class CourseInstructorService : ICourseInstructorService
         return true;
     }
 }
+
+public class AccountHolderService : IAccountHolderService
+{
+    private readonly StudentRegistrarDbContext _context;
+    private readonly IMapper _mapper;
+
+    public AccountHolderService(StudentRegistrarDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string keycloakUserId)
+    {
+        var accountHolder = await _context.AccountHolders
+            .Include(ah => ah.Students)
+                .ThenInclude(s => s.Enrollments)
+                    .ThenInclude(e => e.Course)
+            .Include(ah => ah.Students)
+                .ThenInclude(s => s.Enrollments)
+                    .ThenInclude(e => e.Semester)
+            .Include(ah => ah.Payments)
+            .FirstOrDefaultAsync(ah => ah.KeycloakUserId == keycloakUserId);
+
+        return accountHolder != null ? _mapper.Map<AccountHolderDto>(accountHolder) : null;
+    }
+
+    public async Task<AccountHolderDto?> GetAccountHolderByIdAsync(Guid id)
+    {
+        var accountHolder = await _context.AccountHolders
+            .Include(ah => ah.Students)
+                .ThenInclude(s => s.Enrollments)
+                    .ThenInclude(e => e.Course)
+            .Include(ah => ah.Students)
+                .ThenInclude(s => s.Enrollments)
+                    .ThenInclude(e => e.Semester)
+            .Include(ah => ah.Payments)
+            .FirstOrDefaultAsync(ah => ah.Id == id);
+
+        return accountHolder != null ? _mapper.Map<AccountHolderDto>(accountHolder) : null;
+    }
+
+    public async Task<AccountHolderDto> CreateAccountHolderAsync(CreateAccountHolderDto createDto)
+    {
+        var accountHolder = _mapper.Map<AccountHolder>(createDto);
+        accountHolder.Id = Guid.NewGuid();
+        accountHolder.CreatedAt = DateTime.UtcNow;
+        accountHolder.LastEdit = DateTime.UtcNow;
+
+        _context.AccountHolders.Add(accountHolder);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<AccountHolderDto>(accountHolder);
+    }
+
+    public async Task<AccountHolderDto?> UpdateAccountHolderAsync(Guid id, UpdateAccountHolderDto updateDto)
+    {
+        var accountHolder = await _context.AccountHolders.FindAsync(id);
+        if (accountHolder == null)
+            return null;
+
+        // Update basic properties if provided
+        if (!string.IsNullOrEmpty(updateDto.FirstName))
+            accountHolder.FirstName = updateDto.FirstName;
+        if (!string.IsNullOrEmpty(updateDto.LastName))
+            accountHolder.LastName = updateDto.LastName;
+        if (!string.IsNullOrEmpty(updateDto.EmailAddress))
+            accountHolder.EmailAddress = updateDto.EmailAddress;
+        
+        accountHolder.HomePhone = updateDto.HomePhone;
+        accountHolder.MobilePhone = updateDto.MobilePhone;
+        accountHolder.LastEdit = DateTime.UtcNow;
+
+        // Update JSON fields if provided
+        if (updateDto.AddressJson != null)
+        {
+            var address = _mapper.Map<StudentRegistrar.Models.Address>(updateDto.AddressJson);
+            accountHolder.SetAddress(address);
+        }
+
+        if (updateDto.EmergencyContactJson != null)
+        {
+            var contact = _mapper.Map<StudentRegistrar.Models.EmergencyContact>(updateDto.EmergencyContactJson);
+            accountHolder.SetEmergencyContact(contact);
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Re-fetch with includes for return
+        return await GetAccountHolderByIdAsync(accountHolder.Id);
+    }
+
+    public async Task<StudentDto> AddStudentToAccountAsync(Guid accountHolderId, CreateStudentForAccountDto createStudentDto)
+    {
+        var accountHolder = await _context.AccountHolders.FindAsync(accountHolderId);
+        if (accountHolder == null)
+            throw new ArgumentException("Account holder not found", nameof(accountHolderId));
+
+        var student = _mapper.Map<Student>(createStudentDto);
+        student.Id = Guid.NewGuid();
+        student.AccountHolderId = accountHolderId;
+        student.CreatedAt = DateTime.UtcNow;
+        student.UpdatedAt = DateTime.UtcNow;
+
+        _context.NewStudents.Add(student);
+        await _context.SaveChangesAsync();
+
+        // Return the created student with includes
+        var createdStudent = await _context.NewStudents
+            .Include(s => s.Enrollments)
+                .ThenInclude(e => e.Course)
+            .Include(s => s.Enrollments)
+                .ThenInclude(e => e.Semester)
+            .FirstOrDefaultAsync(s => s.Id == student.Id);
+
+        return createdStudent != null ? _mapper.Map<StudentDto>(createdStudent) : throw new InvalidOperationException("Failed to create student");
+    }
+
+    public async Task<bool> RemoveStudentFromAccountAsync(Guid accountHolderId, Guid studentId)
+    {
+        var student = await _context.NewStudents
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.AccountHolderId == accountHolderId);
+
+        if (student == null)
+            return false;
+
+        _context.NewStudents.Remove(student);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+}

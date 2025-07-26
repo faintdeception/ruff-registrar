@@ -400,3 +400,154 @@ public class InstructorInfo
     public List<string> Qualifications { get; set; } = new();
     public Dictionary<string, string> CustomFields { get; set; } = new();
 }
+
+// AccountHolder DTOs for the frontend
+public class AccountHolderDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string EmailAddress { get; set; } = string.Empty;
+    public string? HomePhone { get; set; }
+    public string? MobilePhone { get; set; }
+    public AddressInfo AddressJson { get; set; } = new();
+    public EmergencyContactInfo EmergencyContactJson { get; set; } = new();
+    public decimal MembershipDuesOwed { get; set; }
+    public decimal MembershipDuesReceived { get; set; }
+    public DateTime MemberSince { get; set; }
+    public DateTime? LastLogin { get; set; }
+    public DateTime LastEdit { get; set; }
+    public List<StudentDetailDto> Students { get; set; } = new();
+    public List<PaymentDto> Payments { get; set; } = new();
+}
+
+public class CreateAccountHolderDto
+{
+    [Required]
+    [StringLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+    
+    [Required]
+    [StringLength(100)]
+    public string LastName { get; set; } = string.Empty;
+    
+    [Required]
+    [EmailAddress]
+    [StringLength(255)]
+    public string EmailAddress { get; set; } = string.Empty;
+    
+    [StringLength(20)]
+    public string? HomePhone { get; set; }
+    
+    [StringLength(20)]
+    public string? MobilePhone { get; set; }
+    
+    public AddressInfo? AddressJson { get; set; }
+    public EmergencyContactInfo? EmergencyContactJson { get; set; }
+}
+
+public class UpdateAccountHolderDto
+{
+    [StringLength(100)]
+    public string? FirstName { get; set; }
+    
+    [StringLength(100)]
+    public string? LastName { get; set; }
+    
+    [EmailAddress]
+    [StringLength(255)]
+    public string? EmailAddress { get; set; }
+    
+    [StringLength(20)]
+    public string? HomePhone { get; set; }
+    
+    [StringLength(20)]
+    public string? MobilePhone { get; set; }
+    
+    public AddressInfo? AddressJson { get; set; }
+    public EmergencyContactInfo? EmergencyContactJson { get; set; }
+}
+
+public class StudentDetailDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? Grade { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public StudentInfoDetails StudentInfoJson { get; set; } = new();
+    public string? Notes { get; set; }
+    public List<EnrollmentDetailDto> Enrollments { get; set; } = new();
+}
+
+public class CreateStudentForAccountDto
+{
+    [Required]
+    [StringLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+    
+    [Required]
+    [StringLength(100)]
+    public string LastName { get; set; } = string.Empty;
+    
+    [StringLength(20)]
+    public string? Grade { get; set; }
+    
+    public DateTime? DateOfBirth { get; set; }
+    public StudentInfoDetails? StudentInfoJson { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class EnrollmentDetailDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string CourseId { get; set; } = string.Empty;
+    public string CourseName { get; set; } = string.Empty;
+    public string? CourseCode { get; set; }
+    public string SemesterName { get; set; } = string.Empty;
+    public string EnrollmentType { get; set; } = string.Empty;
+    public DateTime EnrollmentDate { get; set; }
+    public decimal FeeAmount { get; set; }
+    public decimal AmountPaid { get; set; }
+    public string PaymentStatus { get; set; } = string.Empty;
+    public int? WaitlistPosition { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PaymentDto
+{
+    public string Id { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public DateTime PaymentDate { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty;
+    public string PaymentType { get; set; } = string.Empty;
+    public string? TransactionId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class AddressInfo
+{
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+}
+
+public class EmergencyContactInfo
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? HomePhone { get; set; }
+    public string? MobilePhone { get; set; }
+    public string Email { get; set; } = string.Empty;
+}
+
+public class StudentInfoDetails
+{
+    public List<string> SpecialConditions { get; set; } = new();
+    public List<string> Allergies { get; set; } = new();
+    public List<string> Medications { get; set; } = new();
+    public string? PreferredName { get; set; }
+    public string? ParentNotes { get; set; }
+}

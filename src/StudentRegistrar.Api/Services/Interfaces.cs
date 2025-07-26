@@ -60,3 +60,13 @@ public interface ICourseInstructorService
     Task<CourseInstructorDto?> UpdateCourseInstructorAsync(Guid id, UpdateCourseInstructorDto updateDto);
     Task<bool> DeleteCourseInstructorAsync(Guid id);
 }
+
+public interface IAccountHolderService
+{
+    Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string userId);
+    Task<AccountHolderDto?> GetAccountHolderByIdAsync(Guid id);
+    Task<AccountHolderDto> CreateAccountHolderAsync(CreateAccountHolderDto createDto);
+    Task<AccountHolderDto?> UpdateAccountHolderAsync(Guid id, UpdateAccountHolderDto updateDto);
+    Task<StudentDto> AddStudentToAccountAsync(Guid accountHolderId, CreateStudentForAccountDto createDto);
+    Task<bool> RemoveStudentFromAccountAsync(Guid accountHolderId, Guid studentId);
+}

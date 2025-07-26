@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface AccountHolder {
   id: string;
@@ -75,43 +76,47 @@ interface Payment {
   notes?: string;
 }
 
+interface CreateStudentForm {
+  firstName: string;
+  lastName: string;
+  grade?: string;
+  dateOfBirth?: string;
+  studentInfoJson: {
+    specialConditions?: string[];
+    allergies?: string[];
+    medications?: string[];
+    preferredName?: string;
+    parentNotes?: string;
+  };
+  notes?: string;
+}
+
 const AccountHolderPage: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
   const [accountHolder, setAccountHolder] = useState<AccountHolder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showAddStudentForm, setShowAddStudentForm] = useState(false);
+  const [addingStudent, setAddingStudent] = useState(false);
+  const [newStudent, setNewStudent] = useState<CreateStudentForm>({
+    firstName: '',
+    lastName: '',
+    grade: '',
+    dateOfBirth: '',
+    studentInfoJson: {
+      specialConditions: [],
+      allergies: [],
+      medications: [],
+      preferredName: '',
+      parentNotes: ''
+    },
+    notes: ''
+  });
 
   useEffect(() => {
     if (!user) return;
-
-    const fetchAccountHolder = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-
-        const response = await fetch(`/api/account-holders/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch account holder data');
-        }
-
-        const data = await response.json();
-        setAccountHolder(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAccountHolder();
   }, [user]);
 
@@ -124,6 +129,141 @@ const AccountHolderPage: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingStudent(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`/api/account-holders/me/students`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: newStudent.firstName,
+          lastName: newStudent.lastName,
+          grade: newStudent.grade || null,
+          dateOfBirth: newStudent.dateOfBirth ? new Date(newStudent.dateOfBirth).toISOString() : null,
+          studentInfoJson: {
+            specialConditions: newStudent.studentInfoJson.specialConditions?.filter(c => c.trim()) || [],
+            allergies: newStudent.studentInfoJson.allergies?.filter(a => a.trim()) || [],
+            medications: newStudent.studentInfoJson.medications?.filter(m => m.trim()) || [],
+            preferredName: newStudent.studentInfoJson.preferredName || null,
+            parentNotes: newStudent.studentInfoJson.parentNotes || null
+          },
+          notes: newStudent.notes || null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add student');
+      }
+
+      // Refresh account holder data
+      fetchAccountHolder();
+      
+      // Show success message
+      setSuccessMessage('Student added successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+      
+      // Reset form
+      setNewStudent({
+        firstName: '',
+        lastName: '',
+        grade: '',
+        dateOfBirth: '',
+        studentInfoJson: {
+          specialConditions: [],
+          allergies: [],
+          medications: [],
+          preferredName: '',
+          parentNotes: ''
+        },
+        notes: ''
+      });
+      setShowAddStudentForm(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add student');
+    } finally {
+      setAddingStudent(false);
+    }
+  };
+
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!confirm('Are you sure you want to remove this student?')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      setSuccessMessage(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`/api/account-holders/me/students/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove student');
+      }
+
+      // Refresh account holder data
+      fetchAccountHolder();
+      
+      // Show success message
+      setSuccessMessage('Student removed successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove student');
+    }
+  };
+
+  const fetchAccountHolder = async () => {
+    try {
+      setError(null);
+      setSuccessMessage(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`/api/account-holders/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch account holder data');
+      }
+
+      const data = await response.json();
+      setAccountHolder(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -160,6 +300,20 @@ const AccountHolderPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
+        
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:px-6">
@@ -273,13 +427,210 @@ const AccountHolderPage: React.FC = () => {
         </div>
 
         {/* Students */}
-        {accountHolder.students && accountHolder.students.length > 0 && (
-          <div className="mt-6">
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:px-6">
-                <h2 className="text-lg font-medium text-gray-900">Students</h2>
+        <div className="mt-6">
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900">Students</h2>
+              <button
+                onClick={() => setShowAddStudentForm(true)}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <PlusIcon className="h-4 w-4 mr-1" />
+                Add Student
+              </button>
+            </div>
+            
+            {showAddStudentForm && (
+              <div className="border-t border-gray-200 px-4 py-5 sm:px-6 bg-gray-50">
+                <form onSubmit={handleAddStudent} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.firstName}
+                        onChange={(e) => setNewStudent({...newStudent, firstName: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newStudent.lastName}
+                        onChange={(e) => setNewStudent({...newStudent, lastName: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Preferred Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newStudent.studentInfoJson.preferredName}
+                        onChange={(e) => setNewStudent({
+                          ...newStudent, 
+                          studentInfoJson: {...newStudent.studentInfoJson, preferredName: e.target.value}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Grade
+                      </label>
+                      <input
+                        type="text"
+                        value={newStudent.grade}
+                        onChange={(e) => setNewStudent({...newStudent, grade: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., K, 1, 2, 3..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        value={newStudent.dateOfBirth}
+                        onChange={(e) => setNewStudent({...newStudent, dateOfBirth: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Allergies (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={newStudent.studentInfoJson.allergies?.join(', ') || ''}
+                      onChange={(e) => setNewStudent({
+                        ...newStudent, 
+                        studentInfoJson: {
+                          ...newStudent.studentInfoJson, 
+                          allergies: e.target.value.split(',').map(a => a.trim()).filter(a => a)
+                        }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Peanuts, Tree nuts"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Medications (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={newStudent.studentInfoJson.medications?.join(', ') || ''}
+                      onChange={(e) => setNewStudent({
+                        ...newStudent, 
+                        studentInfoJson: {
+                          ...newStudent.studentInfoJson, 
+                          medications: e.target.value.split(',').map(m => m.trim()).filter(m => m)
+                        }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., EpiPen, Inhaler"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Special Conditions (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={newStudent.studentInfoJson.specialConditions?.join(', ') || ''}
+                      onChange={(e) => setNewStudent({
+                        ...newStudent, 
+                        studentInfoJson: {
+                          ...newStudent.studentInfoJson, 
+                          specialConditions: e.target.value.split(',').map(c => c.trim()).filter(c => c)
+                        }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., ADHD, Autism"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Parent Notes
+                    </label>
+                    <textarea
+                      value={newStudent.studentInfoJson.parentNotes}
+                      onChange={(e) => setNewStudent({
+                        ...newStudent, 
+                        studentInfoJson: {...newStudent.studentInfoJson, parentNotes: e.target.value}
+                      })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Any additional notes about your child..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      General Notes
+                    </label>
+                    <textarea
+                      value={newStudent.notes}
+                      onChange={(e) => setNewStudent({...newStudent, notes: e.target.value})}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Any other notes..."
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddStudentForm(false);
+                        setNewStudent({
+                          firstName: '',
+                          lastName: '',
+                          grade: '',
+                          dateOfBirth: '',
+                          studentInfoJson: {
+                            specialConditions: [],
+                            allergies: [],
+                            medications: [],
+                            preferredName: '',
+                            parentNotes: ''
+                          },
+                          notes: ''
+                        });
+                      }}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addingStudent}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {addingStudent ? 'Adding...' : 'Add Student'}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div className="border-t border-gray-200">
+            )}
+            
+            <div className="border-t border-gray-200">
+              {accountHolder.students && accountHolder.students.length > 0 ? (
                 <div className="space-y-6 px-4 py-5 sm:px-6">
                   {accountHolder.students.map((student) => (
                     <div key={student.id} className="border border-gray-200 rounded-lg p-4">
@@ -301,6 +652,13 @@ const AccountHolderPage: React.FC = () => {
                             </p>
                           )}
                         </div>
+                        <button
+                          onClick={() => handleRemoveStudent(student.id)}
+                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          title="Remove student"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
                       </div>
 
                       {/* Student Info */}
@@ -366,10 +724,14 @@ const AccountHolderPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="px-4 py-5 sm:px-6 text-center text-gray-500">
+                  No students added yet. Click "Add Student" to get started.
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Recent Payments */}
         {accountHolder.payments && accountHolder.payments.length > 0 && (

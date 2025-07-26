@@ -96,5 +96,75 @@ public class MappingProfile : Profile
                     dest.SetInstructorInfo(modelInfo);
                 }
             });
+        // AccountHolder mappings
+        CreateMap<AccountHolder, AccountHolderDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.AddressJson, opt => opt.MapFrom(src => src.GetAddress()))
+            .ForMember(dest => dest.EmergencyContactJson, opt => opt.MapFrom(src => src.GetEmergencyContact()))
+            .ForMember(dest => dest.Students, opt => opt.MapFrom(src => src.Students))
+            .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments));
+            
+        CreateMap<CreateAccountHolderDto, AccountHolder>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.LastEdit, opt => opt.Ignore())
+            .ForMember(dest => dest.Students, opt => opt.Ignore())
+            .ForMember(dest => dest.Payments, opt => opt.Ignore())
+            .ForMember(dest => dest.AddressJson, opt => opt.Ignore())
+            .ForMember(dest => dest.EmergencyContactJson, opt => opt.Ignore())
+            .AfterMap((src, dest, context) => 
+            {
+                if (src.AddressJson != null)
+                {
+                    var address = context.Mapper.Map<StudentRegistrar.Models.Address>(src.AddressJson);
+                    dest.SetAddress(address);
+                }
+                if (src.EmergencyContactJson != null)
+                {
+                    var contact = context.Mapper.Map<StudentRegistrar.Models.EmergencyContact>(src.EmergencyContactJson);
+                    dest.SetEmergencyContact(contact);
+                }
+                dest.MemberSince = DateTime.UtcNow;
+                dest.LastEdit = DateTime.UtcNow;
+            });
+            
+        CreateMap<Student, StudentDetailDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.StudentInfoJson, opt => opt.MapFrom(src => src.GetStudentInfo()))
+            .ForMember(dest => dest.Enrollments, opt => opt.MapFrom(src => src.Enrollments));
+            
+        CreateMap<CreateStudentForAccountDto, Student>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolderId, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.StudentInfoJson, opt => opt.Ignore())
+            .AfterMap((src, dest, context) => 
+            {
+                if (src.StudentInfoJson != null)
+                {
+                    var modelInfo = context.Mapper.Map<StudentRegistrar.Models.StudentInfo>(src.StudentInfoJson);
+                    dest.SetStudentInfo(modelInfo);
+                }
+                dest.CreatedAt = DateTime.UtcNow;
+                dest.UpdatedAt = DateTime.UtcNow;
+            });
+            
+        CreateMap<Enrollment, EnrollmentDetailDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.CourseId, opt => opt.MapFrom(src => src.CourseId.ToString()))
+            .ForMember(dest => dest.CourseName, opt => opt.MapFrom(src => src.Course != null ? src.Course.Name : ""))
+            .ForMember(dest => dest.CourseCode, opt => opt.MapFrom(src => src.Course != null ? src.Course.Code : null))
+            .ForMember(dest => dest.SemesterName, opt => opt.MapFrom(src => src.Semester != null ? src.Semester.Name : ""));
+            
+        CreateMap<Payment, PaymentDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
+            
+        // Supporting object mappings
+        CreateMap<StudentRegistrar.Models.Address, AddressInfo>().ReverseMap();
+        CreateMap<StudentRegistrar.Models.EmergencyContact, EmergencyContactInfo>().ReverseMap();
+        CreateMap<StudentRegistrar.Models.StudentInfo, StudentInfoDetails>().ReverseMap();
     }
 }
