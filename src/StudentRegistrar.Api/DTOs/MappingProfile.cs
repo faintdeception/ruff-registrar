@@ -178,5 +178,47 @@ public class MappingProfile : Profile
         CreateMap<StudentRegistrar.Models.Address, AddressInfo>().ReverseMap();
         CreateMap<StudentRegistrar.Models.EmergencyContact, EmergencyContactInfo>().ReverseMap();
         CreateMap<StudentRegistrar.Models.StudentInfo, StudentInfoDetails>().ReverseMap();
+        
+        // New Course System mappings
+        CreateMap<Semester, SemesterDto>()
+            .ForMember(dest => dest.IsRegistrationOpen, opt => opt.MapFrom(src => src.IsRegistrationOpen));
+        CreateMap<CreateSemesterDto, Semester>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Courses, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.PeriodConfigJson, opt => opt.Ignore());
+        CreateMap<UpdateSemesterDto, Semester>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Courses, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.PeriodConfigJson, opt => opt.Ignore());
+            
+        CreateMap<Course, NewCourseDto>()
+            .ForMember(dest => dest.TimeSlot, opt => opt.MapFrom(src => src.TimeSlot))
+            .ForMember(dest => dest.CurrentEnrollment, opt => opt.MapFrom(src => src.CurrentEnrollment))
+            .ForMember(dest => dest.AvailableSpots, opt => opt.MapFrom(src => src.AvailableSpots))
+            .ForMember(dest => dest.IsFull, opt => opt.MapFrom(src => src.IsFull))
+            .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors));
+        CreateMap<CreateNewCourseDto, Course>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Semester, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseInstructors, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore());
+        CreateMap<UpdateNewCourseDto, Course>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.SemesterId, opt => opt.Ignore())
+            .ForMember(dest => dest.Semester, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseInstructors, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore());
     }
 }

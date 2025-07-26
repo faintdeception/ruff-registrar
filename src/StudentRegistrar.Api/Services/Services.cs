@@ -768,3 +768,187 @@ public class AccountHolderService : IAccountHolderService
         return true;
     }
 }
+
+// New Course System Services
+public class SemesterService : ISemesterService
+{
+    private readonly StudentRegistrarDbContext _context;
+    private readonly IMapper _mapper;
+
+    public SemesterService(StudentRegistrarDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<SemesterDto>> GetAllSemestersAsync()
+    {
+        var semesters = await _context.Semesters
+            .Include(s => s.Courses)
+                .ThenInclude(c => c.CourseInstructors)
+            .OrderByDescending(s => s.StartDate)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<SemesterDto>>(semesters);
+    }
+
+    public async Task<SemesterDto?> GetSemesterByIdAsync(Guid id)
+    {
+        var semester = await _context.Semesters
+            .Include(s => s.Courses)
+                .ThenInclude(c => c.CourseInstructors)
+            .FirstOrDefaultAsync(s => s.Id == id);
+        
+        return semester != null ? _mapper.Map<SemesterDto>(semester) : null;
+    }
+
+    public async Task<SemesterDto?> GetActiveSemesterAsync()
+    {
+        var now = DateTime.UtcNow;
+        var semester = await _context.Semesters
+            .Include(s => s.Courses)
+                .ThenInclude(c => c.CourseInstructors)
+            .Where(s => s.IsActive && s.StartDate <= now && s.EndDate >= now)
+            .OrderByDescending(s => s.StartDate)
+            .FirstOrDefaultAsync();
+        
+        return semester != null ? _mapper.Map<SemesterDto>(semester) : null;
+    }
+
+    public async Task<SemesterDto> CreateSemesterAsync(CreateSemesterDto createDto)
+    {
+        var semester = _mapper.Map<Semester>(createDto);
+        semester.Id = Guid.NewGuid();
+        semester.CreatedAt = DateTime.UtcNow;
+        semester.UpdatedAt = DateTime.UtcNow;
+        
+        _context.Semesters.Add(semester);
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<SemesterDto>(semester);
+    }
+
+    public async Task<SemesterDto?> UpdateSemesterAsync(Guid id, UpdateSemesterDto updateDto)
+    {
+        var semester = await _context.Semesters.FindAsync(id);
+        if (semester == null)
+            return null;
+
+        _mapper.Map(updateDto, semester);
+        semester.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<SemesterDto>(semester);
+    }
+
+    public async Task<bool> DeleteSemesterAsync(Guid id)
+    {
+        var semester = await _context.Semesters.FindAsync(id);
+        if (semester == null)
+            return false;
+
+        _context.Semesters.Remove(semester);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}
+
+public class NewCourseService : INewCourseService
+{
+    private readonly StudentRegistrarDbContext _context;
+    private readonly IMapper _mapper;
+
+    public NewCourseService(StudentRegistrarDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<NewCourseDto>> GetAllCoursesAsync()
+    {
+        var courses = await _context.NewCourses
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .Include(c => c.Enrollments)
+            .OrderBy(c => c.Semester.StartDate)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<NewCourseDto>>(courses);
+    }
+
+    public async Task<IEnumerable<NewCourseDto>> GetCoursesBySemesterAsync(Guid semesterId)
+    {
+        var courses = await _context.NewCourses
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .Include(c => c.Enrollments)
+            .Where(c => c.SemesterId == semesterId)
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+        
+        return _mapper.Map<IEnumerable<NewCourseDto>>(courses);
+    }
+
+    public async Task<NewCourseDto?> GetCourseByIdAsync(Guid id)
+    {
+        var course = await _context.NewCourses
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        
+        return course != null ? _mapper.Map<NewCourseDto>(course) : null;
+    }
+
+    public async Task<NewCourseDto> CreateCourseAsync(CreateNewCourseDto createDto)
+    {
+        var course = _mapper.Map<Course>(createDto);
+        course.Id = Guid.NewGuid();
+        course.CreatedAt = DateTime.UtcNow;
+        course.UpdatedAt = DateTime.UtcNow;
+        
+        _context.NewCourses.Add(course);
+        await _context.SaveChangesAsync();
+        
+        // Load related entities for response
+        var createdCourse = await _context.NewCourses
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.Id == course.Id);
+        
+        return _mapper.Map<NewCourseDto>(createdCourse!);
+    }
+
+    public async Task<NewCourseDto?> UpdateCourseAsync(Guid id, UpdateNewCourseDto updateDto)
+    {
+        var course = await _context.NewCourses
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        
+        if (course == null)
+            return null;
+
+        _mapper.Map(updateDto, course);
+        course.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        
+        return _mapper.Map<NewCourseDto>(course);
+    }
+
+    public async Task<bool> DeleteCourseAsync(Guid id)
+    {
+        var course = await _context.NewCourses.FindAsync(id);
+        if (course == null)
+            return false;
+
+        _context.NewCourses.Remove(course);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}

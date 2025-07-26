@@ -61,6 +61,27 @@ public interface ICourseInstructorService
     Task<bool> DeleteCourseInstructorAsync(Guid id);
 }
 
+// New Course System Services
+public interface ISemesterService
+{
+    Task<IEnumerable<SemesterDto>> GetAllSemestersAsync();
+    Task<SemesterDto?> GetSemesterByIdAsync(Guid id);
+    Task<SemesterDto?> GetActiveSemesterAsync();
+    Task<SemesterDto> CreateSemesterAsync(CreateSemesterDto createDto);
+    Task<SemesterDto?> UpdateSemesterAsync(Guid id, UpdateSemesterDto updateDto);
+    Task<bool> DeleteSemesterAsync(Guid id);
+}
+
+public interface INewCourseService
+{
+    Task<IEnumerable<NewCourseDto>> GetAllCoursesAsync();
+    Task<IEnumerable<NewCourseDto>> GetCoursesBySemesterAsync(Guid semesterId);
+    Task<NewCourseDto?> GetCourseByIdAsync(Guid id);
+    Task<NewCourseDto> CreateCourseAsync(CreateNewCourseDto createDto);
+    Task<NewCourseDto?> UpdateCourseAsync(Guid id, UpdateNewCourseDto updateDto);
+    Task<bool> DeleteCourseAsync(Guid id);
+}
+
 public interface IAccountHolderService
 {
     Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string userId);

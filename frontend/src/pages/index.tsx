@@ -56,11 +56,19 @@ export default function Home() {
                   <Link href="/courses" className="text-gray-600 hover:text-primary-600">
                     Courses
                   </Link>
+                  {user?.roles.includes('Administrator') && (
+                    <Link href="/semesters" className="text-gray-600 hover:text-primary-600">
+                      Semesters
+                    </Link>
+                  )}
                   <Link href="/enrollments" className="text-gray-600 hover:text-primary-600">
                     Enrollments
                   </Link>
                   <Link href="/grades" className="text-gray-600 hover:text-primary-600">
                     Grades
+                  </Link>
+                  <Link href="/educators" className="text-gray-600 hover:text-primary-600">
+                    Educators
                   </Link>
                 </nav>
                 

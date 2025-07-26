@@ -39,6 +39,9 @@ builder.Services.AddScoped<IGradeService, GradeService>();
 builder.Services.AddScoped<IKeycloakService, KeycloakService>();
 builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
 builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
+// New course system services
+builder.Services.AddScoped<ISemesterService, SemesterService>();
+builder.Services.AddScoped<INewCourseService, NewCourseService>();
 
 // Add HttpClient for Keycloak
 builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
@@ -74,6 +77,50 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.Zero
+        };
+        
+        // Configure JWT token handling for Keycloak roles
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var claimsIdentity = context.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                if (claimsIdentity != null)
+                {
+                    // Extract roles from Keycloak's realm_access structure
+                    var realmAccessClaim = context.Principal?.FindFirst("realm_access")?.Value;
+                    if (!string.IsNullOrEmpty(realmAccessClaim))
+                    {
+                        try
+                        {
+                            var realmAccess = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(realmAccessClaim);
+                            if (realmAccess != null && realmAccess.ContainsKey("roles"))
+                            {
+                                var rolesElement = (System.Text.Json.JsonElement)realmAccess["roles"];
+                                if (rolesElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                                {
+                                    foreach (var roleElement in rolesElement.EnumerateArray())
+                                    {
+                                        if (roleElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                                        {
+                                            var role = roleElement.GetString();
+                                            if (!string.IsNullOrEmpty(role))
+                                            {
+                                                claimsIdentity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (System.Text.Json.JsonException)
+                        {
+                            // Ignore JSON parsing errors
+                        }
+                    }
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

@@ -27,13 +27,7 @@ public class CourseInstructorsController : ControllerBase
     {
         try
         {
-            // Validate user has admin role
-            var userRole = GetUserRole();
-            if (userRole != "Administrator")
-            {
-                return Forbid("Only administrators can view course instructors");
-            }
-
+            // Allow all authenticated users to view course instructors
             var instructors = await _courseInstructorService.GetAllCourseInstructorsAsync();
             return Ok(instructors);
         }
@@ -49,13 +43,7 @@ public class CourseInstructorsController : ControllerBase
     {
         try
         {
-            // Validate user has admin role
-            var userRole = GetUserRole();
-            if (userRole != "Administrator")
-            {
-                return Forbid("Only administrators can view course instructors");
-            }
-
+            // Allow all authenticated users to view course instructor details
             var instructor = await _courseInstructorService.GetCourseInstructorByIdAsync(id);
             if (instructor == null)
                 return NotFound();
@@ -74,13 +62,7 @@ public class CourseInstructorsController : ControllerBase
     {
         try
         {
-            // Validate user has admin role
-            var userRole = GetUserRole();
-            if (userRole != "Administrator")
-            {
-                return Forbid("Only administrators can view course instructors");
-            }
-
+            // Allow all authenticated users to view course instructors by course
             var instructors = await _courseInstructorService.GetCourseInstructorsByCourseIdAsync(courseId);
             return Ok(instructors);
         }

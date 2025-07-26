@@ -60,7 +60,7 @@ const AdminEducatorsPage = () => {
   });
 
   useEffect(() => {
-    // Get token from localStorage (simulating authentication)
+    // Get token from localStorage
     const storedToken = localStorage.getItem('accessToken');
     if (!storedToken) {
       router.push('/login');
@@ -98,15 +98,17 @@ const AdminEducatorsPage = () => {
 
   const loadCourses = async (authToken: string) => {
     try {
-      // For now, we'll use the course IDs we know from the database
-      const mockCourses = [
-        { id: 'c4cdedd3-feea-4e30-9e16-2259fde1e6af', name: 'Beginning Art', code: 'ART101' },
-        { id: 'fb8cc5d7-e1e6-4657-a2ef-b78e89420797', name: 'Young Scientists', code: 'SCI101' },
-        { id: 'bfb0a259-6528-4ae4-93f9-e68be26bcca9', name: 'Creative Writing', code: 'ENG201' },
-        { id: '92712314-8333-4393-b32e-045b87648a82', name: 'Math Games', code: 'MATH101' },
-        { id: 'e600582d-f39f-4d5d-9862-0fe8c405a147', name: 'Drama Club', code: 'DRAMA101' }
-      ];
-      setCourses(mockCourses);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Courses`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data);
+      }
     } catch (err) {
       console.error('Error loading courses:', err);
     }

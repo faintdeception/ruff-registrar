@@ -551,3 +551,96 @@ public class StudentInfoDetails
     public string? PreferredName { get; set; }
     public string? ParentNotes { get; set; }
 }
+
+// New Course System DTOs
+
+public class SemesterDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public DateTime RegistrationStartDate { get; set; }
+    public DateTime RegistrationEndDate { get; set; }
+    public bool IsActive { get; set; }
+    public bool IsRegistrationOpen { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public List<NewCourseDto> Courses { get; set; } = new();
+}
+
+public class CreateSemesterDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public DateTime RegistrationStartDate { get; set; }
+    public DateTime RegistrationEndDate { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public class UpdateSemesterDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public DateTime RegistrationStartDate { get; set; }
+    public DateTime RegistrationEndDate { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public class NewCourseDto
+{
+    public Guid Id { get; set; }
+    public Guid SemesterId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public string? Description { get; set; }
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; }
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string? TimeSlot { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
+    public int CurrentEnrollment { get; set; }
+    public int AvailableSpots { get; set; }
+    public bool IsFull { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public SemesterDto? Semester { get; set; }
+    public List<CourseInstructorDto> Instructors { get; set; } = new();
+}
+
+public class CreateNewCourseDto
+{
+    public Guid SemesterId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public string? Description { get; set; }
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; } = 0;
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
+}
+
+public class UpdateNewCourseDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Code { get; set; }
+    public string? Description { get; set; }
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; }
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
+}
