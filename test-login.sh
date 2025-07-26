@@ -15,7 +15,7 @@ TOKEN_RESPONSE=$(curl -s -X POST http://localhost:8080/realms/student-registrar/
   -d "client_id=student-registrar" \
   -d "client_secret=hpWpXCmMHAzDy0FrwUwrBONtTdoeXBNx" \
   -d "username=scoopadmin" \
-  -d "password=K\!rtfe413y")
+  -d "password=K!rtfe413y")
 
 echo "Token response: $TOKEN_RESPONSE"
 

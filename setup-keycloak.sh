@@ -4,7 +4,7 @@
 
 set -e
 
-KEYCLOAK_URL="http://localhost:55928"
+KEYCLOAK_URL="http://localhost:8080"
 ADMIN_USER="zach-admin"
 REALM_NAME="student-registrar"
 CLIENT_ID="student-registrar"
@@ -13,13 +13,37 @@ echo "🔐 Setting up Keycloak for Student Registrar"
 echo "============================================="
 echo ""
 
+# Check for required tools
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq is required but not installed. Please install jq first."
+    exit 1
+fi
+
+if ! command -v curl &> /dev/null; then
+    echo "❌ curl is required but not installed. Please install curl first."
+    exit 1
+fi
+
+# Function to check if command succeeded
+check_api_response() {
+    local response="$1"
+    local description="$2"
+    
+    if echo "$response" | grep -q "error"; then
+        echo "❌ Failed to $description"
+        echo "Error: $response"
+        return 1
+    fi
+    return 0
+}
+
 # Function to get admin access token
 get_admin_token() {
     local admin_password=$1
     curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "username=${ADMIN_USER}" \
-        -d "password=${admin_password}" \
+        --data-urlencode "username=${ADMIN_USER}" \
+        --data-urlencode "password=${admin_password}" \
         -d "grant_type=password" \
         -d "client_id=admin-cli" | jq -r '.access_token'
 }
@@ -30,15 +54,56 @@ echo "   1. Start your application: dotnet run --project src/StudentRegistrar.Ap
 echo "   2. Open Aspire Dashboard: http://localhost:15888"
 echo "   3. Go to Resources tab and find the Keycloak admin password"
 echo ""
+
+# Test Keycloak connectivity first
+echo "🔍 Testing Keycloak connectivity..."
+echo "   Trying to reach: ${KEYCLOAK_URL}/realms/master"
+KEYCLOAK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${KEYCLOAK_URL}/realms/master")
+CURL_EXIT_CODE=$?
+
+if [ $CURL_EXIT_CODE -ne 0 ]; then
+    echo "❌ Failed to connect to Keycloak (curl exit code: $CURL_EXIT_CODE)"
+    case $CURL_EXIT_CODE in
+        7) echo "   Error: Failed to connect to host" ;;
+        28) echo "   Error: Connection timeout" ;;
+        *) echo "   Error: Unknown curl error" ;;
+    esac
+    echo ""
+    echo "💡 Troubleshooting steps:"
+    echo "   1. Check if your application is running: dotnet run --project src/StudentRegistrar.AppHost"
+    echo "   2. Check if Keycloak is accessible in browser: ${KEYCLOAK_URL}"
+    echo "   3. Verify the port in Aspire Dashboard: http://localhost:15888"
+    exit 1
+fi
+
+if [ "$KEYCLOAK_STATUS" != "200" ]; then
+    echo "❌ Keycloak returned HTTP status: $KEYCLOAK_STATUS"
+    echo "   URL: ${KEYCLOAK_URL}/realms/master"
+    echo "   Please ensure Keycloak is running and accessible."
+    exit 1
+fi
+echo "✅ Keycloak is accessible"
+
+# read -s -p "Enter Keycloak admin password: " ADMIN_PASSWORD
 read -s -p "Enter Keycloak admin password: " ADMIN_PASSWORD
 echo ""
 
 # Get admin token
 echo "🔑 Getting admin access token..."
-TOKEN=$(get_admin_token "$ADMIN_PASSWORD")
+TOKEN_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "username=${ADMIN_USER}" \
+    --data-urlencode "password=${ADMIN_PASSWORD}" \
+    -d "grant_type=password" \
+    -d "client_id=admin-cli")
+
+echo "Debug - Token response: $TOKEN_RESPONSE"
+
+TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
 
 if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
     echo "❌ Failed to get admin token. Please check your password and try again."
+    echo "Full response: $TOKEN_RESPONSE"
     exit 1
 fi
 
@@ -116,44 +181,235 @@ if [ "$CLIENT_UUID" != "null" ] && [ -n "$CLIENT_UUID" ]; then
     CLIENT_SECRET=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/$REALM_NAME/clients/$CLIENT_UUID/client-secret" \
         -H "Authorization: Bearer $TOKEN" | jq -r '.value')
     
-    # Create test user
-    echo "👤 Creating test user: scoopadmin"
-    USER_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/$REALM_NAME/users" \
+    # Create scoopadmin user if not exists
+    SCOOPADMIN_USERNAME="scoopadmin"
+    SCOOPADMIN_PASSWORD="K!rtfe413y"
+
+    # Check if user exists
+    USER_EXISTS=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPADMIN_USERNAME}" \
         -H "Authorization: Bearer $TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"username\": \"scoopadmin\",
-            \"enabled\": true,
-            \"email\": \"scoopadmin@example.com\",
-            \"firstName\": \"Scoop\",
-            \"lastName\": \"Admin\",
-            \"emailVerified\": true,
-            \"credentials\": [{
-                \"type\": \"password\",
-                \"value\": \"K\\!rtfe413y\",
-                \"temporary\": false
-            }]
-        }")
-    
-    # Get user ID and assign Administrator role
-    echo "   Assigning Administrator role to scoopadmin..."
-    USER_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/$REALM_NAME/users?username=scoopadmin" \
-        -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
-    
-    if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
-        # Get Administrator role
-        ADMIN_ROLE=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/$REALM_NAME/roles/Administrator" \
-            -H "Authorization: Bearer $TOKEN")
+        -H "Content-Type: application/json" | jq 'length')
+
+    if [ "$USER_EXISTS" -eq 0 ]; then
+        echo "👤 Creating user: $SCOOPADMIN_USERNAME in realm: $REALM_NAME"
         
-        # Assign role to user
-        curl -s -X POST "${KEYCLOAK_URL}/admin/realms/$REALM_NAME/users/$USER_ID/role-mappings/realm" \
+        # Create user
+        USER_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
-            -d "[$ADMIN_ROLE]"
+            -d "{
+                \"username\": \"$SCOOPADMIN_USERNAME\",
+                \"enabled\": true,
+                \"emailVerified\": true,
+                \"firstName\": \"Scoop\",
+                \"lastName\": \"Admin\",
+                \"email\": \"scoopadmin@example.com\"
+            }")
         
-        echo "✅ Test user created successfully!"
+        if ! check_api_response "$USER_RESPONSE" "create user"; then
+            echo "❌ Failed to create user $SCOOPADMIN_USERNAME"
+            exit 1
+        fi
+        
+        # Get user ID by querying for the user
+        USER_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPADMIN_USERNAME}" \
+            -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+        
+        if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
+            # Set password
+            PASSWORD_RESPONSE=$(curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/reset-password" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"type\": \"password\",
+                    \"value\": \"$SCOOPADMIN_PASSWORD\",
+                    \"temporary\": false
+                }")
+            
+            if ! check_api_response "$PASSWORD_RESPONSE" "set password"; then
+                echo "⚠️  User created but failed to set password"
+            fi
+            
+            # Assign Administrator role
+            ADMIN_ROLE_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/Administrator" \
+                -H "Authorization: Bearer $TOKEN" | jq -r '.id')
+            
+            if [ "$ADMIN_ROLE_ID" != "null" ] && [ -n "$ADMIN_ROLE_ID" ]; then
+                ROLE_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/role-mappings/realm" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "[{
+                        \"id\": \"$ADMIN_ROLE_ID\",
+                        \"name\": \"Administrator\"
+                    }]")
+                
+                if ! check_api_response "$ROLE_RESPONSE" "assign Administrator role"; then
+                    echo "⚠️  User created but failed to assign Administrator role"
+                fi
+                
+                echo "✅ User $SCOOPADMIN_USERNAME created with Administrator role."
+            else
+                echo "⚠️  User created but failed to get Administrator role ID"
+            fi
+        else
+            echo "❌ Failed to get user ID after creation"
+        fi
     else
-        echo "⚠️  User creation may have failed, but setup continues..."
+        echo "ℹ️ User $SCOOPADMIN_USERNAME already exists in realm $REALM_NAME."
+    fi
+    
+    # Create scoopmember user
+    SCOOPMEMBER_USERNAME="scoopmember"
+    SCOOPMEMBER_PASSWORD="changethis123"
+    
+    echo "👤 Checking if user $SCOOPMEMBER_USERNAME exists..."
+    MEMBER_USER_EXISTS=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPMEMBER_USERNAME}" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" | jq 'length')
+
+    if [ "$MEMBER_USER_EXISTS" -eq 0 ]; then
+        echo "👤 Creating user: $SCOOPMEMBER_USERNAME in realm: $REALM_NAME"
+        
+        # Create user
+        USER_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"username\": \"$SCOOPMEMBER_USERNAME\",
+                \"enabled\": true,
+                \"emailVerified\": true,
+                \"firstName\": \"Scoop\",
+                \"lastName\": \"Member\",
+                \"email\": \"scoopmember@example.com\"
+            }")
+        
+        if ! check_api_response "$USER_RESPONSE" "create user"; then
+            echo "❌ Failed to create user $SCOOPMEMBER_USERNAME"
+            exit 1
+        fi
+        
+        # Get user ID by querying for the user
+        USER_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPMEMBER_USERNAME}" \
+            -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+        
+        if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
+            # Set password
+            PASSWORD_RESPONSE=$(curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/reset-password" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"type\": \"password\",
+                    \"value\": \"$SCOOPMEMBER_PASSWORD\",
+                    \"temporary\": false
+                }")
+            
+            if ! check_api_response "$PASSWORD_RESPONSE" "set password"; then
+                echo "⚠️  User created but failed to set password"
+            fi
+            
+            # Assign Member role
+            MEMBER_ROLE_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/Member" \
+                -H "Authorization: Bearer $TOKEN" | jq -r '.id')
+            
+            if [ "$MEMBER_ROLE_ID" != "null" ] && [ -n "$MEMBER_ROLE_ID" ]; then
+                ROLE_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/role-mappings/realm" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "[{
+                        \"id\": \"$MEMBER_ROLE_ID\",
+                        \"name\": \"Member\"
+                    }]")
+                
+                if ! check_api_response "$ROLE_RESPONSE" "assign Member role"; then
+                    echo "⚠️  User created but failed to assign Member role"
+                fi
+                
+                echo "✅ User $SCOOPMEMBER_USERNAME created with Member role."
+            else
+                echo "⚠️  User created but failed to get Member role ID"
+            fi
+        else
+            echo "❌ Failed to get user ID after creation"
+        fi
+    else
+        echo "ℹ️ User $SCOOPMEMBER_USERNAME already exists in realm $REALM_NAME."
+    fi
+    
+    # Create scoopinstructor user
+    SCOOPINSTRUCTOR_USERNAME="scoopinstructor"
+    SCOOPINSTRUCTOR_PASSWORD="changethis123"
+    
+    echo "👤 Checking if user $SCOOPINSTRUCTOR_USERNAME exists..."
+    INSTRUCTOR_USER_EXISTS=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPINSTRUCTOR_USERNAME}" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" | jq 'length')
+
+    if [ "$INSTRUCTOR_USER_EXISTS" -eq 0 ]; then
+        echo "👤 Creating user: $SCOOPINSTRUCTOR_USERNAME in realm: $REALM_NAME"
+        
+        # Create user
+        USER_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"username\": \"$SCOOPINSTRUCTOR_USERNAME\",
+                \"enabled\": true,
+                \"emailVerified\": true,
+                \"firstName\": \"Scoop\",
+                \"lastName\": \"Instructor\",
+                \"email\": \"scoopinstructor@example.com\"
+            }")
+        
+        if ! check_api_response "$USER_RESPONSE" "create user"; then
+            echo "❌ Failed to create user $SCOOPINSTRUCTOR_USERNAME"
+            exit 1
+        fi
+        
+        # Get user ID by querying for the user
+        USER_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPINSTRUCTOR_USERNAME}" \
+            -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+        
+        if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
+            # Set password
+            PASSWORD_RESPONSE=$(curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/reset-password" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"type\": \"password\",
+                    \"value\": \"$SCOOPINSTRUCTOR_PASSWORD\",
+                    \"temporary\": false
+                }")
+            
+            if ! check_api_response "$PASSWORD_RESPONSE" "set password"; then
+                echo "⚠️  User created but failed to set password"
+            fi
+            
+            # Assign Instructor role
+            INSTRUCTOR_ROLE_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/Instructor" \
+                -H "Authorization: Bearer $TOKEN" | jq -r '.id')
+            
+            if [ "$INSTRUCTOR_ROLE_ID" != "null" ] && [ -n "$INSTRUCTOR_ROLE_ID" ]; then
+                ROLE_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/role-mappings/realm" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "[{
+                        \"id\": \"$INSTRUCTOR_ROLE_ID\",
+                        \"name\": \"Instructor\"
+                    }]")
+                
+                if ! check_api_response "$ROLE_RESPONSE" "assign Instructor role"; then
+                    echo "⚠️  User created but failed to assign Instructor role"
+                fi
+                
+                echo "✅ User $SCOOPINSTRUCTOR_USERNAME created with Instructor role."
+            else
+                echo "⚠️  User created but failed to get Instructor role ID"
+            fi
+        else
+            echo "❌ Failed to get user ID after creation"
+        fi
+    else
+        echo "ℹ️ User $SCOOPINSTRUCTOR_USERNAME already exists in realm $REALM_NAME."
     fi
     
     echo "✅ Setup complete!"
@@ -165,12 +421,22 @@ if [ "$CLIENT_UUID" != "null" ] && [ -n "$CLIENT_UUID" ]; then
     echo "Client Secret: $CLIENT_SECRET"
     echo "Keycloak URL: $KEYCLOAK_URL"
     echo ""
-    echo "👤 Test User Created:"
-    echo "===================="
-    echo "Username: scoopadmin"
-    echo "Password: K!rtfe413y"
+    echo "👤 Test Users Created:"
+    echo "====================="
+    echo "Username: $SCOOPADMIN_USERNAME"
+    echo "Password: $SCOOPADMIN_PASSWORD"
     echo "Email: scoopadmin@example.com"
     echo "Role: Administrator"
+    echo ""
+    echo "Username: $SCOOPMEMBER_USERNAME"
+    echo "Password: $SCOOPMEMBER_PASSWORD"
+    echo "Email: scoopmember@example.com"
+    echo "Role: Member"
+    echo ""
+    echo "Username: $SCOOPINSTRUCTOR_USERNAME"
+    echo "Password: $SCOOPINSTRUCTOR_PASSWORD"
+    echo "Email: scoopinstructor@example.com"
+    echo "Role: Instructor"
     echo ""
     echo "🔧 Add this to your API configuration:"
     echo "====================================="
