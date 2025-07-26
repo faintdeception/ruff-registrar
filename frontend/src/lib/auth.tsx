@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshToken: () => Promise<string | null>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -40,14 +41,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (token) {
-      // Verify token and get user info
-      fetchUserInfo(token);
+      // Check if token is expired before using it
+      if (isTokenExpired(token)) {
+        // Try to refresh the token
+        refreshToken().then((newToken) => {
+          if (newToken) {
+            fetchUserInfo(newToken);
+          } else {
+            // Refresh failed, logout
+            logout();
+          }
+        });
+      } else {
+        // Token is still valid, use it
+        fetchUserInfo(token);
+      }
     } else {
       setIsLoading(false);
     }
   }, []);
+
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      // Add 5 minute buffer before actual expiration
+      return payload.exp <= (currentTime + 300);
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true; // Assume expired if we can't parse it
+    }
+  };
+
+  const refreshToken = async (): Promise<string | null> => {
+    try {
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      if (!storedRefreshToken) {
+        return null;
+      }
+
+      const tokenResponse = await fetch(
+        `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            client_id: KEYCLOAK_CLIENT_ID,
+            client_secret: KEYCLOAK_CLIENT_SECRET,
+            refresh_token: storedRefreshToken,
+          }),
+        }
+      );
+
+      if (!tokenResponse.ok) {
+        // Refresh token is invalid/expired
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        return null;
+      }
+
+      const tokenData = await tokenResponse.json();
+      const newAccessToken = tokenData.access_token;
+      const newRefreshToken = tokenData.refresh_token;
+
+      // Store new tokens
+      localStorage.setItem('accessToken', newAccessToken);
+      if (newRefreshToken) {
+        localStorage.setItem('refreshToken', newRefreshToken);
+      }
+
+      return newAccessToken;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      return null;
+    }
+  };
 
   const fetchUserInfo = async (token: string) => {
     try {
@@ -67,7 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
     } catch (error) {
       console.error('Error parsing token:', error);
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -99,13 +175,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const tokenData = await tokenResponse.json();
-      const token = tokenData.access_token;
+      const accessToken = tokenData.access_token;
+      const refreshTokenValue = tokenData.refresh_token;
 
-      // Store token
-      localStorage.setItem('token', token);
+      // Store tokens
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshTokenValue) {
+        localStorage.setItem('refreshToken', refreshTokenValue);
+      }
 
       // Get user info
-      await fetchUserInfo(token);
+      await fetchUserInfo(accessToken);
 
       // Redirect to dashboard
       router.push('/');
@@ -116,7 +196,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setUser(null);
     router.push('/login');
   };
@@ -125,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     login,
     logout,
+    refreshToken,
     isLoading,
     isAuthenticated: !!user,
   };

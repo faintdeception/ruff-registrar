@@ -61,7 +61,7 @@ const AdminEducatorsPage = () => {
 
   useEffect(() => {
     // Get token from localStorage (simulating authentication)
-    const storedToken = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('accessToken');
     if (!storedToken) {
       router.push('/login');
       return;
