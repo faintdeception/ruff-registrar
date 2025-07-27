@@ -25,8 +25,8 @@ public class StudentsControllerTests
         // Arrange
         var expectedStudents = new List<StudentDto>
         {
-            new() { Id = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com" },
-            new() { Id = 2, FirstName = "Jane", LastName = "Smith", Email = "jane@example.com" }
+            new() { Id = 1, FirstName = "John", LastName = "Doe" },
+            new() { Id = 2, FirstName = "Jane", LastName = "Smith" }
         };
 
         _mockStudentService
@@ -47,13 +47,12 @@ public class StudentsControllerTests
     public async Task GetStudent_Should_ReturnOkWithStudent_WhenStudentExists()
     {
         // Arrange
-        var studentId = 1;
+        var studentId = Guid.NewGuid();
         var expectedStudent = new StudentDto 
         { 
-            Id = studentId, 
+            Id = 1, 
             FirstName = "John", 
-            LastName = "Doe", 
-            Email = "john@example.com" 
+            LastName = "Doe" 
         };
 
         _mockStudentService
@@ -74,7 +73,7 @@ public class StudentsControllerTests
     public async Task GetStudent_Should_ReturnNotFound_WhenStudentDoesNotExist()
     {
         // Arrange
-        var studentId = 999;
+        var studentId = Guid.NewGuid();
 
         _mockStudentService
             .Setup(s => s.GetStudentByIdAsync(studentId))
@@ -89,20 +88,20 @@ public class StudentsControllerTests
     }
 
     [Fact]
-    public async Task CreateStudent_Should_ReturnCreatedStudent_WhenValidData()
+    public async Task CreateStudent_Should_ReturnCreatedStudent()
     {
         // Arrange
         var createDto = new CreateStudentDto
         {
-            FirstName = "New",
-            LastName = "Student",
-            Email = "new.student@example.com",
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "john.doe@example.com",
             DateOfBirth = DateOnly.FromDateTime(DateTime.Now.AddYears(-20))
         };
 
         var createdStudent = new StudentDto
         {
-            Id = 3,
+            Id = 1,
             FirstName = createDto.FirstName,
             LastName = createDto.LastName,
             Email = createDto.Email,
@@ -127,18 +126,18 @@ public class StudentsControllerTests
     public async Task UpdateStudent_Should_ReturnOkWithUpdatedStudent_WhenStudentExists()
     {
         // Arrange
-        var studentId = 1;
+        var studentId = Guid.NewGuid();
         var updateDto = new UpdateStudentDto
         {
-            FirstName = "Updated",
-            LastName = "Student",
-            Email = "updated@example.com",
+            FirstName = "John Updated",
+            LastName = "Doe Updated",
+            Email = "john.updated@example.com",
             DateOfBirth = DateOnly.FromDateTime(DateTime.Now.AddYears(-21))
         };
 
         var updatedStudent = new StudentDto
         {
-            Id = studentId,
+            Id = 1,
             FirstName = updateDto.FirstName,
             LastName = updateDto.LastName,
             Email = updateDto.Email,
@@ -163,13 +162,13 @@ public class StudentsControllerTests
     public async Task UpdateStudent_Should_ReturnNotFound_WhenStudentDoesNotExist()
     {
         // Arrange
-        var studentId = 999;
+        var studentId = Guid.NewGuid();
         var updateDto = new UpdateStudentDto
         {
-            FirstName = "Updated",
-            LastName = "Student",
-            Email = "updated@example.com",
-            DateOfBirth = DateOnly.FromDateTime(DateTime.Now.AddYears(-21))
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "john.doe@example.com",
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Now.AddYears(-20))
         };
 
         _mockStudentService
@@ -188,7 +187,7 @@ public class StudentsControllerTests
     public async Task DeleteStudent_Should_ReturnNoContent_WhenStudentDeletedSuccessfully()
     {
         // Arrange
-        var studentId = 1;
+        var studentId = Guid.NewGuid();
 
         _mockStudentService
             .Setup(s => s.DeleteStudentAsync(studentId))
@@ -205,7 +204,7 @@ public class StudentsControllerTests
     public async Task DeleteStudent_Should_ReturnNotFound_WhenStudentNotFound()
     {
         // Arrange
-        var studentId = 999;
+        var studentId = Guid.NewGuid();
 
         _mockStudentService
             .Setup(s => s.DeleteStudentAsync(studentId))
@@ -219,14 +218,13 @@ public class StudentsControllerTests
     }
 
     [Fact]
-    public async Task GetStudentEnrollments_Should_ReturnOkWithEnrollments()
+    public async Task GetStudentEnrollments_Should_ReturnEnrollmentsForStudent()
     {
         // Arrange
-        var studentId = 1;
+        var studentId = Guid.NewGuid();
         var expectedEnrollments = new List<EnrollmentDto>
         {
-            new() { Id = 1, StudentId = studentId, CourseId = 101 },
-            new() { Id = 2, StudentId = studentId, CourseId = 102 }
+            new() { Id = 1, StudentId = 1, CourseId = 101, Status = "Active" }
         };
 
         _mockStudentService
@@ -244,27 +242,27 @@ public class StudentsControllerTests
     }
 
     [Fact]
-    public async Task GetStudentGrades_Should_ReturnOkWithGrades()
+    public async Task GetStudentsByAccountHolder_Should_ReturnStudentsForAccountHolder()
     {
         // Arrange
-        var studentId = 1;
-        var expectedGrades = new List<GradeRecordDto>
+        var accountHolderId = Guid.NewGuid();
+        var expectedStudents = new List<StudentDto>
         {
-            new() { Id = 1, StudentId = studentId, CourseId = 101, LetterGrade = "A" },
-            new() { Id = 2, StudentId = studentId, CourseId = 102, LetterGrade = "B+" }
+            new() { Id = 1, FirstName = "John", LastName = "Doe" },
+            new() { Id = 2, FirstName = "Jane", LastName = "Doe" }
         };
 
         _mockStudentService
-            .Setup(s => s.GetStudentGradesAsync(studentId))
-            .Returns(Task.FromResult<IEnumerable<GradeRecordDto>>(expectedGrades));
+            .Setup(s => s.GetStudentsByAccountHolderAsync(accountHolderId))
+            .Returns(Task.FromResult<IEnumerable<StudentDto>>(expectedStudents));
 
         // Act
-        var result = await _controller.GetStudentGrades(studentId);
+        var result = await _controller.GetStudentsByAccountHolder(accountHolderId);
 
         // Assert
         var actionResult = result.Result;
         actionResult.Should().BeOfType<OkObjectResult>();
         var okResult = actionResult as OkObjectResult;
-        okResult!.Value.Should().BeEquivalentTo(expectedGrades);
+        okResult!.Value.Should().BeEquivalentTo(expectedStudents);
     }
 }
