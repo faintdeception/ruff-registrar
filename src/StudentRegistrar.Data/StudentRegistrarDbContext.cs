@@ -9,93 +9,25 @@ public class StudentRegistrarDbContext : DbContext
     {
     }
 
-    // Legacy entities (will be removed in Phase 2)
-    public DbSet<LegacyStudent> Students { get; set; }
-    public DbSet<LegacyCourse> Courses { get; set; }
-    public DbSet<LegacyEnrollment> Enrollments { get; set; }
+    // Current entities
+    public DbSet<Student> Students { get; set; }
+    public DbSet<Course> Courses { get; set; }
+    public DbSet<Enrollment> Enrollments { get; set; }
     public DbSet<GradeRecord> GradeRecords { get; set; }
     public DbSet<AcademicYear> AcademicYears { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserProfile> UserProfiles { get; set; }
-
-    // New entities
     public DbSet<AccountHolder> AccountHolders { get; set; }
     public DbSet<Semester> Semesters { get; set; }
-    public DbSet<Student> NewStudents { get; set; }
-    public DbSet<Course> NewCourses { get; set; }
     public DbSet<CourseInstructor> CourseInstructors { get; set; }
     public DbSet<Educator> Educators { get; set; }
-    public DbSet<Enrollment> NewEnrollments { get; set; }
     public DbSet<Payment> Payments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure Legacy Student
-        modelBuilder.Entity<LegacyStudent>(entity =>
-        {
-            entity.ToTable("Students");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(320);
-            entity.Property(e => e.DateOfBirth).IsRequired();
-            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
-            entity.Property(e => e.Address).HasMaxLength(500);
-            entity.Property(e => e.City).HasMaxLength(100);
-            entity.Property(e => e.State).HasMaxLength(10);
-            entity.Property(e => e.ZipCode).HasMaxLength(10);
-            entity.Property(e => e.EmergencyContactName).HasMaxLength(100);
-            entity.Property(e => e.EmergencyContactPhone).HasMaxLength(20);
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.UpdatedAt).IsRequired();
-
-            entity.HasIndex(e => e.Email).IsUnique();
-        });
-
-        // Configure Legacy Course
-        modelBuilder.Entity<LegacyCourse>(entity =>
-        {
-            entity.ToTable("Courses");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.CreditHours).IsRequired();
-            entity.Property(e => e.Instructor).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.AcademicYear).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Semester).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.UpdatedAt).IsRequired();
-
-            entity.HasIndex(e => e.Code).IsUnique();
-        });
-
-        // Configure Legacy Enrollment
-        modelBuilder.Entity<LegacyEnrollment>(entity =>
-        {
-            entity.ToTable("Enrollments");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.EnrollmentDate).IsRequired();
-            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Active");
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.UpdatedAt).IsRequired();
-
-            entity.HasOne(e => e.Student)
-                .WithMany(s => s.Enrollments)
-                .HasForeignKey(e => e.StudentId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Course)
-                .WithMany(c => c.Enrollments)
-                .HasForeignKey(e => e.CourseId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(e => new { e.StudentId, e.CourseId }).IsUnique();
-        });
-
-        // Configure New Entities
+        // Configure Current Entities
         
         // Configure AccountHolder
         modelBuilder.Entity<AccountHolder>(entity =>
@@ -138,7 +70,7 @@ public class StudentRegistrarDbContext : DbContext
         // Configure Student
         modelBuilder.Entity<Student>(entity =>
         {
-            entity.ToTable("NewStudents");
+            entity.ToTable("Students");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
             entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
@@ -157,7 +89,7 @@ public class StudentRegistrarDbContext : DbContext
         // Configure Course
         modelBuilder.Entity<Course>(entity =>
         {
-            entity.ToTable("NewCourses");
+            entity.ToTable("Courses");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Code).HasMaxLength(50);
@@ -198,7 +130,7 @@ public class StudentRegistrarDbContext : DbContext
         // Configure Enrollment
         modelBuilder.Entity<Enrollment>(entity =>
         {
-            entity.ToTable("NewEnrollments");
+            entity.ToTable("Enrollments");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.EnrollmentType).IsRequired();
             entity.Property(e => e.EnrollmentDate).IsRequired();
@@ -265,12 +197,12 @@ public class StudentRegistrarDbContext : DbContext
             entity.Property(e => e.UpdatedAt).IsRequired();
 
             entity.HasOne(g => g.Student)
-                .WithMany(s => s.GradeRecords)
+                .WithMany()
                 .HasForeignKey(g => g.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(g => g.Course)
-                .WithMany(c => c.GradeRecords)
+                .WithMany()
                 .HasForeignKey(g => g.CourseId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -304,17 +236,6 @@ public class StudentRegistrarDbContext : DbContext
 
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.KeycloakId).IsUnique();
-
-            // Configure relationships
-            entity.HasMany(u => u.Students)
-                .WithOne(s => s.User)
-                .HasForeignKey(s => s.UserId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasMany(u => u.CoursesCreated)
-                .WithOne(c => c.CreatedByUser)
-                .HasForeignKey(c => c.CreatedByUserId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configure UserProfile
@@ -352,10 +273,10 @@ public class StudentRegistrarDbContext : DbContext
     private void UpdateTimestamps()
     {
         var entries = ChangeTracker.Entries()
-            .Where(e => e.Entity is LegacyStudent || e.Entity is LegacyCourse || e.Entity is LegacyEnrollment || 
-                       e.Entity is GradeRecord || e.Entity is AcademicYear || e.Entity is User ||
+            .Where(e => e.Entity is GradeRecord || e.Entity is AcademicYear || e.Entity is User ||
                        e.Entity is AccountHolder || e.Entity is Semester || e.Entity is Student ||
-                       e.Entity is Course || e.Entity is Enrollment)
+                       e.Entity is Course || e.Entity is Enrollment || e.Entity is CourseInstructor ||
+                       e.Entity is Educator || e.Entity is Payment)
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
         foreach (var entry in entries)

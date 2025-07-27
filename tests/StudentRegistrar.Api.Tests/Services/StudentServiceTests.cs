@@ -14,6 +14,14 @@ public class StudentServiceTests : IDisposable
     private readonly StudentRegistrarDbContext _context;
     private readonly IMapper _mapper;
     private readonly StudentService _service;
+    
+    // Test data references
+    private readonly Guid _johnStudentId = Guid.NewGuid();
+    private readonly Guid _aliceStudentId = Guid.NewGuid();
+    private readonly Guid _accountHolderId = Guid.NewGuid();
+    private readonly Guid _mathCourseId = Guid.NewGuid();
+    private readonly Guid _englishCourseId = Guid.NewGuid();
+    private readonly Guid _fallSemesterId = Guid.NewGuid();
 
     public StudentServiceTests()
     {
@@ -36,87 +44,124 @@ public class StudentServiceTests : IDisposable
 
     private void SeedTestData()
     {
-        var students = new List<LegacyStudent>
+        // Create test semester first
+        var semester = new Semester
         {
-            new LegacyStudent
+            Id = _fallSemesterId,
+            Name = "Fall 2024",
+            Code = "FALL2024",
+            StartDate = new DateTime(2024, 8, 15),
+            EndDate = new DateTime(2024, 12, 15),
+            RegistrationStartDate = new DateTime(2024, 7, 1),
+            RegistrationEndDate = new DateTime(2024, 8, 10),
+            IsActive = true
+        };
+
+        // Create test account holder
+        var accountHolder = new AccountHolder
+        {
+            Id = _accountHolderId,
+            FirstName = "Parent",
+            LastName = "Guardian",
+            EmailAddress = "parent@example.com",
+            HomePhone = "555-123-4567",
+            KeycloakUserId = "test-keycloak-id"
+        };
+        
+        // Set address using helper method
+        accountHolder.SetAddress(new Address
+        {
+            Street = "123 Parent St",
+            City = "Parent City",
+            State = "CA",
+            PostalCode = "12345"
+        });
+
+        var students = new List<Student>
+        {
+            new Student
             {
-                Id = 1,
+                Id = _johnStudentId,
                 FirstName = "John",
                 LastName = "Doe",
-                Email = "john.doe@example.com",
-                PhoneNumber = "123-456-7890",
-                DateOfBirth = new DateOnly(2000, 1, 15),
-                Address = "123 Main St",
-                City = "Anytown",
-                State = "CA",
-                ZipCode = "12345",
-                EmergencyContactName = "Bob Doe",
-                EmergencyContactPhone = "123-456-7892",
-                CreatedAt = DateTime.Now.AddMonths(-6),
-                UpdatedAt = DateTime.Now.AddMonths(-6)
+                DateOfBirth = new DateTime(2000, 1, 15),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyStudent
+            new Student
             {
-                Id = 2,
-                FirstName = "Jane",
+                Id = _aliceStudentId,
+                FirstName = "Alice",
                 LastName = "Smith",
-                Email = "jane.smith@example.com",
-                PhoneNumber = "987-654-3210",
-                DateOfBirth = new DateOnly(1999, 5, 20),
-                Address = "456 Oak Ave",
-                City = "Somewhere",
-                State = "NY",
-                ZipCode = "54321",
-                EmergencyContactName = "Mary Smith",
-                EmergencyContactPhone = "987-654-3212",
-                CreatedAt = DateTime.Now.AddMonths(-3),
-                UpdatedAt = DateTime.Now.AddMonths(-3)
+                DateOfBirth = new DateTime(1999, 5, 20),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-3)
             }
         };
 
-        var courses = new List<LegacyCourse>
+        var courses = new List<Course>
         {
-            new LegacyCourse
+            new Course
             {
-                Id = 1,
+                Id = _mathCourseId,
                 Name = "Math 101",
                 Code = "MATH101",
                 Description = "Basic Mathematics",
-                CreditHours = 3,
-                Instructor = "Prof. Johnson",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 30,
+                Fee = 500.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(9, 0, 0),
+                EndTime = new TimeSpan(10, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyCourse
+            new Course
             {
-                Id = 2,
+                Id = _englishCourseId,
                 Name = "English 101",
                 Code = "ENG101",
                 Description = "Basic English",
-                CreditHours = 3,
-                Instructor = "Prof. Williams",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 25,
+                Fee = 450.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(11, 0, 0),
+                EndTime = new TimeSpan(12, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             }
         };
 
-        var enrollments = new List<LegacyEnrollment>
+        var enrollments = new List<Enrollment>
         {
-            new LegacyEnrollment
+            new Enrollment
             {
-                Id = 1,
-                StudentId = 1,
-                CourseId = 1,
-                EnrollmentDate = DateTime.Now.AddMonths(-2),
-                Status = "Active"
+                Id = Guid.NewGuid(),
+                StudentId = _johnStudentId,
+                CourseId = _mathCourseId,
+                SemesterId = semester.Id,
+                EnrollmentType = EnrollmentType.Enrolled,
+                EnrollmentDate = DateTime.UtcNow.AddMonths(-2),
+                FeeAmount = 500.00m,
+                AmountPaid = 500.00m,
+                PaymentStatus = PaymentStatus.Paid
             },
-            new LegacyEnrollment
+            new Enrollment
             {
-                Id = 2,
-                StudentId = 2,
-                CourseId = 2,
-                EnrollmentDate = DateTime.Now.AddMonths(-1),
-                Status = "Active"
+                Id = Guid.NewGuid(),
+                StudentId = _aliceStudentId,
+                CourseId = _mathCourseId,
+                SemesterId = semester.Id,
+                EnrollmentType = EnrollmentType.Enrolled,
+                EnrollmentDate = DateTime.UtcNow.AddMonths(-1),
+                FeeAmount = 500.00m,
+                AmountPaid = 250.00m,
+                PaymentStatus = PaymentStatus.Partial
             }
         };
 
@@ -125,23 +170,25 @@ public class StudentServiceTests : IDisposable
             new GradeRecord
             {
                 Id = 1,
-                StudentId = 1,
-                CourseId = 1,
+                StudentId = _johnStudentId,
+                CourseId = _mathCourseId,
                 LetterGrade = "A",
-                GradeDate = DateTime.Now.AddDays(-14),
+                GradeDate = DateTime.UtcNow.AddDays(-14),
                 Comments = "Excellent work"
             },
             new GradeRecord
             {
                 Id = 2,
-                StudentId = 2,
-                CourseId = 2,
+                StudentId = _aliceStudentId,
+                CourseId = _mathCourseId,
                 LetterGrade = "B+",
-                GradeDate = DateTime.Now.AddDays(-7),
+                GradeDate = DateTime.UtcNow.AddDays(-7),
                 Comments = "Good progress"
             }
         };
 
+        _context.Semesters.Add(semester);
+        _context.AccountHolders.Add(accountHolder);
         _context.Students.AddRange(students);
         _context.Courses.AddRange(courses);
         _context.Enrollments.AddRange(enrollments);
@@ -330,17 +377,17 @@ public class StudentServiceTests : IDisposable
         var additionalGrade = new GradeRecord
         {
             Id = 3,
-            StudentId = 1,
-            CourseId = 1,
+            StudentId = _johnStudentId,
+            CourseId = _mathCourseId,
             LetterGrade = "B",
-            GradeDate = DateTime.Now.AddDays(-1),
+            GradeDate = DateTime.UtcNow.AddDays(-1),
             Comments = "Recent grade"
         };
         _context.GradeRecords.Add(additionalGrade);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _service.GetStudentGradesAsync(1);
+        var result = await _service.GetStudentGradesAsync(_johnStudentId.GetHashCode());
 
         // Assert
         result.Should().NotBeNull();

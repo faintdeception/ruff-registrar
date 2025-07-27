@@ -23,6 +23,7 @@ public class StudentService : IStudentService
     public async Task<IEnumerable<StudentDto>> GetAllStudentsAsync()
     {
         var students = await _context.Students
+            .Include(s => s.AccountHolder)
             .OrderBy(s => s.LastName)
             .ThenBy(s => s.FirstName)
             .ToListAsync();
@@ -32,27 +33,80 @@ public class StudentService : IStudentService
 
     public async Task<StudentDto?> GetStudentByIdAsync(int id)
     {
-        var student = await _context.Students.FindAsync(id);
+        // For legacy compatibility, we'll try to find by converting the int to a predictable Guid hash
+        var students = await _context.Students
+            .Include(s => s.AccountHolder)
+            .ToListAsync();
+        
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
         return student != null ? _mapper.Map<StudentDto>(student) : null;
     }
 
     public async Task<StudentDto> CreateStudentAsync(CreateStudentDto createStudentDto)
     {
-        var student = _mapper.Map<LegacyStudent>(createStudentDto);
+        var student = _mapper.Map<Student>(createStudentDto);
+        student.Id = Guid.NewGuid();
+        
+        // For legacy compatibility, we need to create or associate with an AccountHolder
+        // For now, we'll create a basic AccountHolder if needed
+        var accountHolder = new AccountHolder
+        {
+            Id = Guid.NewGuid(),
+            FirstName = createStudentDto.FirstName,
+            LastName = createStudentDto.LastName,
+            EmailAddress = createStudentDto.Email,
+            HomePhone = createStudentDto.PhoneNumber,
+            KeycloakUserId = Guid.NewGuid().ToString(), // Temporary - should be set properly
+            MemberSince = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            LastEdit = DateTime.UtcNow
+        };
+        
+        _context.AccountHolders.Add(accountHolder);
+        await _context.SaveChangesAsync();
+        
+        student.AccountHolderId = accountHolder.Id;
+        student.DateOfBirth = createStudentDto.DateOfBirth.ToDateTime(TimeOnly.MinValue);
         
         _context.Students.Add(student);
         await _context.SaveChangesAsync();
+        
+        // Load the AccountHolder for mapping
+        await _context.Entry(student)
+            .Reference(s => s.AccountHolder)
+            .LoadAsync();
         
         return _mapper.Map<StudentDto>(student);
     }
 
     public async Task<StudentDto?> UpdateStudentAsync(int id, UpdateStudentDto updateStudentDto)
     {
-        var student = await _context.Students.FindAsync(id);
+        var students = await _context.Students
+            .Include(s => s.AccountHolder)
+            .ToListAsync();
+        
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
         if (student == null)
             return null;
 
-        _mapper.Map(updateStudentDto, student);
+        // Update student properties
+        student.FirstName = updateStudentDto.FirstName;
+        student.LastName = updateStudentDto.LastName;
+        if (updateStudentDto.DateOfBirth != default)
+        {
+            student.DateOfBirth = updateStudentDto.DateOfBirth.ToDateTime(TimeOnly.MinValue);
+        }
+        
+        // Update AccountHolder if available
+        if (student.AccountHolder != null)
+        {
+            student.AccountHolder.FirstName = updateStudentDto.FirstName;
+            student.AccountHolder.LastName = updateStudentDto.LastName;
+            student.AccountHolder.EmailAddress = updateStudentDto.Email;
+            student.AccountHolder.HomePhone = updateStudentDto.PhoneNumber;
+            student.AccountHolder.LastEdit = DateTime.UtcNow;
+        }
+        
         await _context.SaveChangesAsync();
         
         return _mapper.Map<StudentDto>(student);
@@ -60,7 +114,8 @@ public class StudentService : IStudentService
 
     public async Task<bool> DeleteStudentAsync(int id)
     {
-        var student = await _context.Students.FindAsync(id);
+        var students = await _context.Students.ToListAsync();
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
         if (student == null)
             return false;
 
@@ -71,8 +126,14 @@ public class StudentService : IStudentService
 
     public async Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(int studentId)
     {
+        // Find the student first to get the actual Guid
+        var students = await _context.Students.ToListAsync();
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == studentId);
+        if (student == null)
+            return Enumerable.Empty<EnrollmentDto>();
+        
         var enrollments = await _context.Enrollments
-            .Where(e => e.StudentId == studentId)
+            .Where(e => e.StudentId == student.Id)
             .Include(e => e.Course)
             .Include(e => e.Student)
             .ToListAsync();
@@ -82,8 +143,14 @@ public class StudentService : IStudentService
 
     public async Task<IEnumerable<GradeRecordDto>> GetStudentGradesAsync(int studentId)
     {
+        // Find the student first to get the actual Guid
+        var students = await _context.Students.ToListAsync();
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == studentId);
+        if (student == null)
+            return Enumerable.Empty<GradeRecordDto>();
+        
         var grades = await _context.GradeRecords
-            .Where(g => g.StudentId == studentId)
+            .Where(g => g.StudentId == student.Id)
             .Include(g => g.Course)
             .Include(g => g.Student)
             .OrderByDescending(g => g.GradeDate)
@@ -107,8 +174,10 @@ public class CourseService : ICourseService
     public async Task<IEnumerable<CourseDto>> GetAllCoursesAsync()
     {
         var courses = await _context.Courses
-            .OrderBy(c => c.AcademicYear)
-            .ThenBy(c => c.Semester)
+            .Include(c => c.Semester)
+            .Include(c => c.CourseInstructors)
+            .OrderBy(c => c.Semester.StartDate)
+            .ThenBy(c => c.Name)
             .ThenBy(c => c.Code)
             .ToListAsync();
         
@@ -123,10 +192,39 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto)
     {
-        var course = _mapper.Map<LegacyCourse>(createCourseDto);
+        var course = _mapper.Map<Course>(createCourseDto);
+        course.Id = Guid.NewGuid();
+        
+        // For legacy compatibility, we need a default semester - create one if needed
+        var defaultSemester = await _context.Semesters.FirstOrDefaultAsync() ?? 
+            new Semester
+            {
+                Id = Guid.NewGuid(),
+                Name = "Default Semester",
+                Code = "DEFAULT",
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddMonths(6),
+                RegistrationStartDate = DateTime.UtcNow,
+                RegistrationEndDate = DateTime.UtcNow.AddMonths(6),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+        
+        if (await _context.Semesters.FirstOrDefaultAsync() == null)
+        {
+            _context.Semesters.Add(defaultSemester);
+            await _context.SaveChangesAsync();
+        }
+        
+        course.SemesterId = defaultSemester.Id;
         
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
+        
+        // Load semester for mapping
+        await _context.Entry(course)
+            .Reference(c => c.Semester)
+            .LoadAsync();
         
         return _mapper.Map<CourseDto>(course);
     }
@@ -156,8 +254,14 @@ public class CourseService : ICourseService
 
     public async Task<IEnumerable<EnrollmentDto>> GetCourseEnrollmentsAsync(int courseId)
     {
+        // Find the course by legacy int ID first
+        var courses = await _context.Courses.ToListAsync();
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == courseId);
+        if (course == null)
+            return Enumerable.Empty<EnrollmentDto>();
+        
         var enrollments = await _context.Enrollments
-            .Where(e => e.CourseId == courseId)
+            .Where(e => e.CourseId == course.Id)
             .Include(e => e.Student)
             .Include(e => e.Course)
             .ToListAsync();
@@ -167,8 +271,14 @@ public class CourseService : ICourseService
 
     public async Task<IEnumerable<GradeRecordDto>> GetCourseGradesAsync(int courseId)
     {
+        // Find the course by legacy int ID first
+        var courses = await _context.Courses.ToListAsync();
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == courseId);
+        if (course == null)
+            return Enumerable.Empty<GradeRecordDto>();
+        
         var grades = await _context.GradeRecords
-            .Where(g => g.CourseId == courseId)
+            .Where(g => g.CourseId == course.Id)
             .Include(g => g.Student)
             .Include(g => g.Course)
             .OrderBy(g => g.Student.LastName)
@@ -203,17 +313,34 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id)
     {
-        var enrollment = await _context.Enrollments
+        var enrollments = await _context.Enrollments
             .Include(e => e.Student)
             .Include(e => e.Course)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .ToListAsync();
+        
+        var enrollment = enrollments.FirstOrDefault(e => e.Id.GetHashCode() == id);
         
         return enrollment != null ? _mapper.Map<EnrollmentDto>(enrollment) : null;
     }
 
     public async Task<EnrollmentDto> CreateEnrollmentAsync(CreateEnrollmentDto createEnrollmentDto)
     {
-        var enrollment = _mapper.Map<LegacyEnrollment>(createEnrollmentDto);
+        var enrollment = _mapper.Map<Enrollment>(createEnrollmentDto);
+        enrollment.Id = Guid.NewGuid();
+        
+        // For legacy compatibility, we need to find the student and course by their int IDs
+        var students = await _context.Students.ToListAsync();
+        var courses = await _context.Courses.ToListAsync();
+        
+        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == createEnrollmentDto.StudentId);
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == createEnrollmentDto.CourseId);
+        
+        if (student == null || course == null)
+            throw new ArgumentException("Student or Course not found");
+        
+        enrollment.StudentId = student.Id;
+        enrollment.CourseId = course.Id;
+        enrollment.SemesterId = course.SemesterId; // Use the course's semester
         
         _context.Enrollments.Add(enrollment);
         await _context.SaveChangesAsync();
@@ -242,17 +369,30 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<EnrollmentDto?> UpdateEnrollmentStatusAsync(int id, string status)
     {
-        var enrollment = await _context.Enrollments
+        var enrollments = await _context.Enrollments
             .Include(e => e.Student)
             .Include(e => e.Course)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .ToListAsync();
+        
+        var enrollment = enrollments.FirstOrDefault(e => e.Id.GetHashCode() == id);
         
         if (enrollment == null)
             return null;
 
-        enrollment.Status = status;
-        if (status == "Completed")
-            enrollment.CompletionDate = DateTime.UtcNow;
+        // Map status string to EnrollmentType enum
+        if (Enum.TryParse<EnrollmentType>(status, true, out var enrollmentType))
+        {
+            enrollment.EnrollmentType = enrollmentType;
+        }
+        
+        // Handle withdrawal date if applicable
+        if (status.Equals("Withdrawn", StringComparison.OrdinalIgnoreCase) || 
+            status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            var enrollmentInfo = enrollment.GetEnrollmentInfo();
+            enrollmentInfo.WithdrawalDate = DateTime.UtcNow;
+            enrollment.SetEnrollmentInfo(enrollmentInfo);
+        }
         
         await _context.SaveChangesAsync();
         
@@ -862,11 +1002,11 @@ public class AccountHolderService : IAccountHolderService
         student.CreatedAt = DateTime.UtcNow;
         student.UpdatedAt = DateTime.UtcNow;
 
-        _context.NewStudents.Add(student);
+        _context.Students.Add(student);
         await _context.SaveChangesAsync();
 
         // Return the created student with includes
-        var createdStudent = await _context.NewStudents
+        var createdStudent = await _context.Students
             .Include(s => s.Enrollments)
                 .ThenInclude(e => e.Course)
             .Include(s => s.Enrollments)
@@ -878,13 +1018,13 @@ public class AccountHolderService : IAccountHolderService
 
     public async Task<bool> RemoveStudentFromAccountAsync(Guid accountHolderId, Guid studentId)
     {
-        var student = await _context.NewStudents
+        var student = await _context.Students
             .FirstOrDefaultAsync(s => s.Id == studentId && s.AccountHolderId == accountHolderId);
 
         if (student == null)
             return false;
 
-        _context.NewStudents.Remove(student);
+        _context.Students.Remove(student);
         await _context.SaveChangesAsync();
 
         return true;
@@ -989,7 +1129,7 @@ public class NewCourseService : INewCourseService
 
     public async Task<IEnumerable<NewCourseDto>> GetAllCoursesAsync()
     {
-        var courses = await _context.NewCourses
+        var courses = await _context.Courses
             .Include(c => c.Semester)
             .Include(c => c.CourseInstructors)
             .Include(c => c.Enrollments)
@@ -1002,7 +1142,7 @@ public class NewCourseService : INewCourseService
 
     public async Task<IEnumerable<NewCourseDto>> GetCoursesBySemesterAsync(Guid semesterId)
     {
-        var courses = await _context.NewCourses
+        var courses = await _context.Courses
             .Include(c => c.Semester)
             .Include(c => c.CourseInstructors)
             .Include(c => c.Enrollments)
@@ -1015,7 +1155,7 @@ public class NewCourseService : INewCourseService
 
     public async Task<NewCourseDto?> GetCourseByIdAsync(Guid id)
     {
-        var course = await _context.NewCourses
+        var course = await _context.Courses
             .Include(c => c.Semester)
             .Include(c => c.CourseInstructors)
             .Include(c => c.Enrollments)
@@ -1031,11 +1171,11 @@ public class NewCourseService : INewCourseService
         course.CreatedAt = DateTime.UtcNow;
         course.UpdatedAt = DateTime.UtcNow;
         
-        _context.NewCourses.Add(course);
+        _context.Courses.Add(course);
         await _context.SaveChangesAsync();
         
         // Load related entities for response
-        var createdCourse = await _context.NewCourses
+        var createdCourse = await _context.Courses
             .Include(c => c.Semester)
             .Include(c => c.CourseInstructors)
             .Include(c => c.Enrollments)
@@ -1046,7 +1186,7 @@ public class NewCourseService : INewCourseService
 
     public async Task<NewCourseDto?> UpdateCourseAsync(Guid id, UpdateNewCourseDto updateDto)
     {
-        var course = await _context.NewCourses
+        var course = await _context.Courses
             .Include(c => c.Semester)
             .Include(c => c.CourseInstructors)
             .Include(c => c.Enrollments)
@@ -1065,11 +1205,11 @@ public class NewCourseService : INewCourseService
 
     public async Task<bool> DeleteCourseAsync(Guid id)
     {
-        var course = await _context.NewCourses.FindAsync(id);
+        var course = await _context.Courses.FindAsync(id);
         if (course == null)
             return false;
 
-        _context.NewCourses.Remove(course);
+        _context.Courses.Remove(course);
         await _context.SaveChangesAsync();
         return true;
     }

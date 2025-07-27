@@ -14,6 +14,14 @@ public class GradeServiceTests : IDisposable
     private readonly StudentRegistrarDbContext _context;
     private readonly IMapper _mapper;
     private readonly GradeService _service;
+    
+    // Test data references
+    private readonly Guid _johnStudentId = Guid.NewGuid();
+    private readonly Guid _aliceStudentId = Guid.NewGuid();
+    private readonly Guid _accountHolderId = Guid.NewGuid();
+    private readonly Guid _mathCourseId = Guid.NewGuid();
+    private readonly Guid _englishCourseId = Guid.NewGuid();
+    private readonly Guid _fallSemesterId = Guid.NewGuid();
 
     public GradeServiceTests()
     {
@@ -36,67 +44,96 @@ public class GradeServiceTests : IDisposable
 
     private void SeedTestData()
     {
-        var students = new List<LegacyStudent>
+        // Create test semester first
+        var semester = new Semester
         {
-            new LegacyStudent
+            Id = _fallSemesterId,
+            Name = "Fall 2024",
+            Code = "FALL2024",
+            StartDate = new DateTime(2024, 8, 15),
+            EndDate = new DateTime(2024, 12, 15),
+            RegistrationStartDate = new DateTime(2024, 7, 1),
+            RegistrationEndDate = new DateTime(2024, 8, 10),
+            IsActive = true
+        };
+
+        // Create test account holder
+        var accountHolder = new AccountHolder
+        {
+            Id = _accountHolderId,
+            FirstName = "Parent",
+            LastName = "Guardian",
+            EmailAddress = "parent@example.com",
+            HomePhone = "555-123-4567",
+            KeycloakUserId = "test-keycloak-id"
+        };
+        
+        // Set address using helper method
+        accountHolder.SetAddress(new Address
+        {
+            Street = "123 Parent St",
+            City = "Parent City",
+            State = "CA",
+            PostalCode = "12345"
+        });
+
+        var students = new List<Student>
+        {
+            new Student
             {
-                Id = 1,
+                Id = _johnStudentId,
                 FirstName = "John",
                 LastName = "Doe",
-                Email = "john.doe@example.com",
-                PhoneNumber = "123-456-7890",
-                DateOfBirth = new DateOnly(2000, 1, 15),
-                Address = "123 Main St",
-                City = "Anytown",
-                State = "CA",
-                ZipCode = "12345",
-                EmergencyContactName = "Bob Doe",
-                EmergencyContactPhone = "123-456-7892",
-                CreatedAt = DateTime.Now.AddMonths(-6),
-                UpdatedAt = DateTime.Now.AddMonths(-6)
+                DateOfBirth = new DateTime(2000, 1, 15),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyStudent
+            new Student
             {
-                Id = 2,
+                Id = _aliceStudentId,
                 FirstName = "Alice",
                 LastName = "Smith",
-                Email = "alice.smith@example.com",
-                PhoneNumber = "987-654-3210",
-                DateOfBirth = new DateOnly(1999, 5, 20),
-                Address = "456 Oak Ave",
-                City = "Somewhere",
-                State = "NY",
-                ZipCode = "54321",
-                EmergencyContactName = "Mary Smith",
-                EmergencyContactPhone = "987-654-3212",
-                CreatedAt = DateTime.Now.AddMonths(-3),
-                UpdatedAt = DateTime.Now.AddMonths(-3)
+                DateOfBirth = new DateTime(1999, 5, 20),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-3)
             }
         };
 
-        var courses = new List<LegacyCourse>
+        var courses = new List<Course>
         {
-            new LegacyCourse
+            new Course
             {
-                Id = 1,
+                Id = _mathCourseId,
                 Name = "Math 101",
                 Code = "MATH101",
                 Description = "Basic Mathematics",
-                CreditHours = 3,
-                Instructor = "Prof. Johnson",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 30,
+                Fee = 500.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(9, 0, 0),
+                EndTime = new TimeSpan(10, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyCourse
+            new Course
             {
-                Id = 2,
+                Id = _englishCourseId,
                 Name = "English 101",
                 Code = "ENG101",
                 Description = "Basic English",
-                CreditHours = 3,
-                Instructor = "Prof. Williams",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 25,
+                Fee = 450.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(11, 0, 0),
+                EndTime = new TimeSpan(12, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             }
         };
 
@@ -105,32 +142,34 @@ public class GradeServiceTests : IDisposable
             new GradeRecord
             {
                 Id = 1,
-                StudentId = 1,
-                CourseId = 1,
+                StudentId = _johnStudentId,
+                CourseId = _mathCourseId,
                 LetterGrade = "A",
-                GradeDate = DateTime.Now.AddDays(-21),
+                GradeDate = DateTime.UtcNow.AddDays(-21),
                 Comments = "Excellent work on midterm"
             },
             new GradeRecord
             {
                 Id = 2,
-                StudentId = 2,
-                CourseId = 1,
+                StudentId = _aliceStudentId,
+                CourseId = _mathCourseId,
                 LetterGrade = "B+",
-                GradeDate = DateTime.Now.AddDays(-14),
+                GradeDate = DateTime.UtcNow.AddDays(-14),
                 Comments = "Good understanding of concepts"
             },
             new GradeRecord
             {
                 Id = 3,
-                StudentId = 1,
-                CourseId = 2,
+                StudentId = _johnStudentId,
+                CourseId = _englishCourseId,
                 LetterGrade = "A-",
-                GradeDate = DateTime.Now.AddDays(-7),
+                GradeDate = DateTime.UtcNow.AddDays(-7),
                 Comments = "Strong essay writing skills"
             }
         };
 
+        _context.Semesters.Add(semester);
+        _context.AccountHolders.Add(accountHolder);
         _context.Students.AddRange(students);
         _context.Courses.AddRange(courses);
         _context.GradeRecords.AddRange(grades);
@@ -163,8 +202,8 @@ public class GradeServiceTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result!.Id.Should().Be(1);
-        result.StudentId.Should().Be(1);
-        result.CourseId.Should().Be(1);
+        result.StudentId.Should().Be(_johnStudentId.GetHashCode());
+        result.CourseId.Should().Be(_mathCourseId.GetHashCode());
         result.LetterGrade.Should().Be("A");
         result.Comments.Should().Be("Excellent work on midterm");
     }
@@ -185,8 +224,8 @@ public class GradeServiceTests : IDisposable
         // Arrange
         var createDto = new CreateGradeRecordDto
         {
-            StudentId = 2,
-            CourseId = 2,
+            StudentId = _aliceStudentId.GetHashCode(),
+            CourseId = _englishCourseId.GetHashCode(),
             LetterGrade = "B",
             Comments = "Good participation in class discussions",
             GradeDate = DateTime.Now
@@ -197,8 +236,8 @@ public class GradeServiceTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.StudentId.Should().Be(2);
-        result.CourseId.Should().Be(2);
+        result.StudentId.Should().Be(_aliceStudentId.GetHashCode());
+        result.CourseId.Should().Be(_englishCourseId.GetHashCode());
         result.LetterGrade.Should().Be("B");
         result.Comments.Should().Be("Good participation in class discussions");
         result.GradeDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromMinutes(1));
@@ -206,8 +245,8 @@ public class GradeServiceTests : IDisposable
         // Verify it was saved to database
         var savedGrade = await _context.GradeRecords.FindAsync(result.Id);
         savedGrade.Should().NotBeNull();
-        savedGrade!.StudentId.Should().Be(2);
-        savedGrade.CourseId.Should().Be(2);
+        savedGrade!.StudentId.Should().Be(_aliceStudentId);
+        savedGrade.CourseId.Should().Be(_englishCourseId);
         savedGrade.LetterGrade.Should().Be("B");
     }
 
@@ -217,8 +256,8 @@ public class GradeServiceTests : IDisposable
         // Arrange
         var updateDto = new CreateGradeRecordDto
         {
-            StudentId = 1,
-            CourseId = 1,
+            StudentId = _johnStudentId.GetHashCode(),
+            CourseId = _mathCourseId.GetHashCode(),
             LetterGrade = "A+",
             Comments = "Outstanding performance on final exam",
             GradeDate = DateTime.Now
@@ -246,8 +285,8 @@ public class GradeServiceTests : IDisposable
         // Arrange
         var updateDto = new CreateGradeRecordDto
         {
-            StudentId = 1,
-            CourseId = 1,
+            StudentId = _johnStudentId.GetHashCode(),
+            CourseId = _mathCourseId.GetHashCode(),
             LetterGrade = "F",
             Comments = "This grade doesn't exist",
             GradeDate = DateTime.Now
@@ -303,8 +342,8 @@ public class GradeServiceTests : IDisposable
         // Arrange
         var createDto = new CreateGradeRecordDto
         {
-            StudentId = 1,
-            CourseId = 1,
+            StudentId = _johnStudentId.GetHashCode(),
+            CourseId = _mathCourseId.GetHashCode(),
             LetterGrade = gradeValue,
             Comments = $"Test grade: {gradeValue}",
             GradeDate = DateTime.Now
@@ -325,8 +364,8 @@ public class GradeServiceTests : IDisposable
         var beforeCreate = DateTime.Now;
         var createDto = new CreateGradeRecordDto
         {
-            StudentId = 1,
-            CourseId = 1,
+            StudentId = _johnStudentId.GetHashCode(),
+            CourseId = _mathCourseId.GetHashCode(),
             LetterGrade = "B",
             Comments = "Testing date assignment",
             GradeDate = DateTime.Now

@@ -9,19 +9,105 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        // Legacy Student mappings (for API compatibility)
-        CreateMap<LegacyStudent, StudentDto>();
-        CreateMap<CreateStudentDto, LegacyStudent>();
-        CreateMap<UpdateStudentDto, LegacyStudent>();
+        // Student mappings (using new Student model)
+        CreateMap<Student, StudentDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.GetHashCode())) // Convert Guid to int for legacy API compatibility
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.AccountHolder != null ? src.AccountHolder.EmailAddress : ""))
+            .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth.HasValue ? DateOnly.FromDateTime(src.DateOfBirth.Value) : new DateOnly()))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.AccountHolder != null ? src.AccountHolder.HomePhone : ""))
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => "")) // Will be filled from AccountHolder address if needed
+            .ForMember(dest => dest.City, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.State, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.ZipCode, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.EmergencyContactName, opt => opt.MapFrom(src => ""))
+            .ForMember(dest => dest.EmergencyContactPhone, opt => opt.MapFrom(src => ""));
+        
+        CreateMap<CreateStudentDto, Student>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolderId, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.StudentInfoJson, opt => opt.Ignore())
+            .ForMember(dest => dest.Grade, opt => opt.Ignore())
+            .ForMember(dest => dest.Notes, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+        
+        CreateMap<UpdateStudentDto, Student>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolderId, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.StudentInfoJson, opt => opt.Ignore())
+            .ForMember(dest => dest.Grade, opt => opt.Ignore())
+            .ForMember(dest => dest.Notes, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
-        // Legacy Course mappings (for API compatibility)
-        CreateMap<LegacyCourse, CourseDto>();
-        CreateMap<CreateCourseDto, LegacyCourse>();
-        CreateMap<UpdateCourseDto, LegacyCourse>();
+        // Course mappings (using new Course model)
+        CreateMap<Course, CourseDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.GetHashCode())) // Convert Guid to int for legacy API compatibility
+            .ForMember(dest => dest.CreditHours, opt => opt.MapFrom(src => 3)) // Default credit hours since new model doesn't have this
+            .ForMember(dest => dest.Instructor, opt => opt.MapFrom(src => string.Join(", ", src.CourseInstructors.Select(ci => ci.FullName))))
+            .ForMember(dest => dest.AcademicYear, opt => opt.MapFrom(src => src.Semester != null ? src.Semester.Name : ""))
+            .ForMember(dest => dest.Semester, opt => opt.MapFrom(src => src.Semester != null ? src.Semester.Code : ""));
+        
+        CreateMap<CreateCourseDto, Course>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.SemesterId, opt => opt.Ignore())
+            .ForMember(dest => dest.Semester, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseInstructors, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore())
+            .ForMember(dest => dest.MaxCapacity, opt => opt.MapFrom(src => 20)) // Default capacity
+            .ForMember(dest => dest.AgeGroup, opt => opt.MapFrom(src => "General"))
+            .ForMember(dest => dest.Fee, opt => opt.Ignore())
+            .ForMember(dest => dest.Room, opt => opt.Ignore())
+            .ForMember(dest => dest.PeriodCode, opt => opt.Ignore());
+        
+        CreateMap<UpdateCourseDto, Course>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.SemesterId, opt => opt.Ignore())
+            .ForMember(dest => dest.Semester, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseInstructors, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore())
+            .ForMember(dest => dest.MaxCapacity, opt => opt.Ignore())
+            .ForMember(dest => dest.AgeGroup, opt => opt.Ignore())
+            .ForMember(dest => dest.Fee, opt => opt.Ignore())
+            .ForMember(dest => dest.Room, opt => opt.Ignore())
+            .ForMember(dest => dest.PeriodCode, opt => opt.Ignore());
 
-        // Legacy Enrollment mappings (for API compatibility)
-        CreateMap<LegacyEnrollment, EnrollmentDto>();
-        CreateMap<CreateEnrollmentDto, LegacyEnrollment>();
+        // Enrollment mappings (using new Enrollment model)
+        CreateMap<Enrollment, EnrollmentDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.GetHashCode())) // Convert Guid to int for legacy API compatibility
+            .ForMember(dest => dest.StudentId, opt => opt.MapFrom(src => src.StudentId.GetHashCode()))
+            .ForMember(dest => dest.CourseId, opt => opt.MapFrom(src => src.CourseId.GetHashCode()))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.EnrollmentType.ToString()))
+            .ForMember(dest => dest.CompletionDate, opt => opt.MapFrom(src => src.GetEnrollmentInfo().WithdrawalDate));
+        
+        CreateMap<CreateEnrollmentDto, Enrollment>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.StudentId, opt => opt.Ignore())
+            .ForMember(dest => dest.CourseId, opt => opt.Ignore())
+            .ForMember(dest => dest.SemesterId, opt => opt.Ignore())
+            .ForMember(dest => dest.Student, opt => opt.Ignore())
+            .ForMember(dest => dest.Course, opt => opt.Ignore())
+            .ForMember(dest => dest.Semester, opt => opt.Ignore())
+            .ForMember(dest => dest.Payments, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.EnrollmentType, opt => opt.MapFrom(src => EnrollmentType.Enrolled))
+            .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => PaymentStatus.Pending))
+            .ForMember(dest => dest.EnrollmentInfoJson, opt => opt.Ignore())
+            .ForMember(dest => dest.FeeAmount, opt => opt.Ignore())
+            .ForMember(dest => dest.AmountPaid, opt => opt.Ignore())
+            .ForMember(dest => dest.Notes, opt => opt.Ignore())
+            .ForMember(dest => dest.WaitlistPosition, opt => opt.Ignore());
 
         // Grade record mappings
         CreateMap<GradeRecord, GradeRecordDto>();
@@ -35,17 +121,13 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.KeycloakId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
-            .ForMember(dest => dest.Students, opt => opt.Ignore())
-            .ForMember(dest => dest.CoursesCreated, opt => opt.Ignore());
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
         CreateMap<UpdateUserRequest, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Email, opt => opt.Ignore())
             .ForMember(dest => dest.KeycloakId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.Students, opt => opt.Ignore())
-            .ForMember(dest => dest.CoursesCreated, opt => opt.Ignore())
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
         // UserProfile mappings

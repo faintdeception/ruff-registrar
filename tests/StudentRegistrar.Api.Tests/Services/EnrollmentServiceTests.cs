@@ -15,6 +15,17 @@ public class EnrollmentServiceTests : IDisposable
     private readonly IMapper _mapper;
     private readonly EnrollmentService _service;
 
+    // Test data Guid IDs
+    private readonly Guid _johnStudentId = Guid.NewGuid();
+    private readonly Guid _aliceStudentId = Guid.NewGuid();
+    private readonly Guid _mathCourseId = Guid.NewGuid();
+    private readonly Guid _englishCourseId = Guid.NewGuid();
+    private readonly Guid _fallSemesterId = Guid.NewGuid();
+    private readonly Guid _accountHolderId = Guid.NewGuid();
+    private readonly Guid _enrollment1Id = Guid.NewGuid();
+    private readonly Guid _enrollment2Id = Guid.NewGuid();
+    private readonly Guid _enrollment3Id = Guid.NewGuid();
+
     public EnrollmentServiceTests()
     {
         var options = new DbContextOptionsBuilder<StudentRegistrarDbContext>()
@@ -36,99 +47,141 @@ public class EnrollmentServiceTests : IDisposable
 
     private void SeedTestData()
     {
-        var students = new List<LegacyStudent>
+        // Create test semester first
+        var semester = new Semester
         {
-            new LegacyStudent
+            Id = _fallSemesterId,
+            Name = "Fall 2024",
+            Code = "FALL2024",
+            StartDate = new DateTime(2024, 8, 15),
+            EndDate = new DateTime(2024, 12, 15),
+            RegistrationStartDate = new DateTime(2024, 7, 1),
+            RegistrationEndDate = new DateTime(2024, 8, 10),
+            IsActive = true
+        };
+
+        // Create test account holder
+        var accountHolder = new AccountHolder
+        {
+            Id = _accountHolderId,
+            FirstName = "Parent",
+            LastName = "Guardian",
+            EmailAddress = "parent@example.com",
+            HomePhone = "555-123-4567",
+            KeycloakUserId = "test-keycloak-id"
+        };
+        
+        // Set address using helper method
+        accountHolder.SetAddress(new Address
+        {
+            Street = "123 Parent St",
+            City = "Parent City",
+            State = "CA",
+            PostalCode = "12345"
+        });
+
+        var students = new List<Student>
+        {
+            new Student
             {
-                Id = 1,
+                Id = _johnStudentId,
                 FirstName = "John",
                 LastName = "Doe",
-                Email = "john.doe@example.com",
-                PhoneNumber = "123-456-7890",
-                DateOfBirth = new DateOnly(2000, 1, 15),
-                Address = "123 Main St",
-                City = "Anytown",
-                State = "CA",
-                ZipCode = "12345",
-                EmergencyContactName = "Bob Doe",
-                EmergencyContactPhone = "123-456-7892",
-                CreatedAt = DateTime.Now.AddMonths(-6),
-                UpdatedAt = DateTime.Now.AddMonths(-6)
+                DateOfBirth = new DateTime(2000, 1, 15),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyStudent
+            new Student
             {
-                Id = 2,
+                Id = _aliceStudentId,
                 FirstName = "Alice",
                 LastName = "Smith",
-                Email = "alice.smith@example.com",
-                PhoneNumber = "987-654-3210",
-                DateOfBirth = new DateOnly(1999, 5, 20),
-                Address = "456 Oak Ave",
-                City = "Somewhere",
-                State = "NY",
-                ZipCode = "54321",
-                EmergencyContactName = "Mary Smith",
-                EmergencyContactPhone = "987-654-3212",
-                CreatedAt = DateTime.Now.AddMonths(-3),
-                UpdatedAt = DateTime.Now.AddMonths(-3)
+                DateOfBirth = new DateTime(1999, 5, 20),
+                AccountHolderId = accountHolder.Id,
+                Grade = "12",
+                CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-3)
             }
         };
 
-        var courses = new List<LegacyCourse>
+        var courses = new List<Course>
         {
-            new LegacyCourse
+            new Course
             {
-                Id = 1,
+                Id = _mathCourseId,
                 Name = "Math 101",
                 Code = "MATH101",
                 Description = "Basic Mathematics",
-                CreditHours = 3,
-                Instructor = "Prof. Johnson",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 30,
+                Fee = 500.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(9, 0, 0),
+                EndTime = new TimeSpan(10, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             },
-            new LegacyCourse
+            new Course
             {
-                Id = 2,
+                Id = _englishCourseId,
                 Name = "English 101",
                 Code = "ENG101",
                 Description = "Basic English",
-                CreditHours = 3,
-                Instructor = "Prof. Williams",
-                AcademicYear = "2024-25",
-                Semester = "Fall"
+                SemesterId = semester.Id,
+                MaxCapacity = 25,
+                Fee = 450.00m,
+                AgeGroup = "High School",
+                StartTime = new TimeSpan(11, 0, 0),
+                EndTime = new TimeSpan(12, 30, 0),
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow.AddMonths(-6)
             }
         };
 
-        var enrollments = new List<LegacyEnrollment>
+        var enrollments = new List<Enrollment>
         {
-            new LegacyEnrollment
+            new Enrollment
             {
-                Id = 1,
-                StudentId = 1,
-                CourseId = 1,
-                EnrollmentDate = DateTime.Now.AddMonths(-2),
-                Status = "Active"
+                Id = _enrollment1Id,
+                StudentId = _johnStudentId,
+                CourseId = _mathCourseId,
+                SemesterId = _fallSemesterId,
+                EnrollmentDate = DateTime.UtcNow.AddMonths(-2),
+                EnrollmentType = EnrollmentType.Enrolled,
+                FeeAmount = 500.00m,
+                AmountPaid = 500.00m,
+                PaymentStatus = PaymentStatus.Paid
             },
-            new LegacyEnrollment
+            new Enrollment
             {
-                Id = 2,
-                StudentId = 2,
-                CourseId = 1,
-                EnrollmentDate = DateTime.Now.AddMonths(-1),
-                Status = "Active"
+                Id = _enrollment2Id,
+                StudentId = _aliceStudentId,
+                CourseId = _mathCourseId,
+                SemesterId = _fallSemesterId,
+                EnrollmentDate = DateTime.UtcNow.AddMonths(-1),
+                EnrollmentType = EnrollmentType.Enrolled,
+                FeeAmount = 500.00m,
+                AmountPaid = 250.00m,
+                PaymentStatus = PaymentStatus.Partial
             },
-            new LegacyEnrollment
+            new Enrollment
             {
-                Id = 3,
-                StudentId = 1,
-                CourseId = 2,
-                EnrollmentDate = DateTime.Now.AddDays(-14),
-                Status = "Completed",
-                CompletionDate = DateTime.Now.AddDays(-7)
+                Id = _enrollment3Id,
+                StudentId = _johnStudentId,
+                CourseId = _englishCourseId,
+                SemesterId = _fallSemesterId,
+                EnrollmentDate = DateTime.UtcNow.AddDays(-14),
+                EnrollmentType = EnrollmentType.Withdrawn,
+                FeeAmount = 450.00m,
+                AmountPaid = 450.00m,
+                PaymentStatus = PaymentStatus.Refunded
             }
         };
 
+        _context.Semesters.Add(semester);
+        _context.AccountHolders.Add(accountHolder);
         _context.Students.AddRange(students);
         _context.Courses.AddRange(courses);
         _context.Enrollments.AddRange(enrollments);
@@ -161,8 +214,8 @@ public class EnrollmentServiceTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result!.Id.Should().Be(1);
-        result.StudentId.Should().Be(1);
-        result.CourseId.Should().Be(1);
+        result.StudentId.Should().Be(_johnStudentId.GetHashCode());
+        result.CourseId.Should().Be(_mathCourseId.GetHashCode());
         result.Status.Should().Be("Active");
     }
 
@@ -182,8 +235,8 @@ public class EnrollmentServiceTests : IDisposable
         // Arrange
         var createDto = new CreateEnrollmentDto
         {
-            StudentId = 2,
-            CourseId = 2,
+            StudentId = _aliceStudentId.GetHashCode(),
+            CourseId = _englishCourseId.GetHashCode(),
             EnrollmentDate = DateTime.Now,
             Status = "Active"
         };
@@ -193,16 +246,16 @@ public class EnrollmentServiceTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.StudentId.Should().Be(2);
-        result.CourseId.Should().Be(2);
+        result.StudentId.Should().Be(_aliceStudentId.GetHashCode());
+        result.CourseId.Should().Be(_englishCourseId.GetHashCode());
         result.Status.Should().Be("Active");
         result.EnrollmentDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromMinutes(1));
 
         // Verify it was saved to database
         var savedEnrollment = await _context.Enrollments.FindAsync(result.Id);
         savedEnrollment.Should().NotBeNull();
-        savedEnrollment!.StudentId.Should().Be(2);
-        savedEnrollment.CourseId.Should().Be(2);
+        savedEnrollment!.StudentId.Should().Be(_aliceStudentId);
+        savedEnrollment.CourseId.Should().Be(_englishCourseId);
     }
 
     [Fact]
@@ -241,9 +294,9 @@ public class EnrollmentServiceTests : IDisposable
         result.Status.Should().Be("Dropped");
 
         // Verify it was updated in database
-        var updatedEnrollment = await _context.Enrollments.FindAsync(1);
+        var updatedEnrollment = await _context.Enrollments.FindAsync(_enrollment1Id);
         updatedEnrollment.Should().NotBeNull();
-        updatedEnrollment!.Status.Should().Be("Dropped");
+        updatedEnrollment!.EnrollmentType.Should().Be(EnrollmentType.Withdrawn);
     }
 
     [Fact]
@@ -262,11 +315,10 @@ public class EnrollmentServiceTests : IDisposable
         result.CompletionDate.Should().BeOnOrAfter(beforeUpdate);
 
         // Verify it was updated in database
-        var updatedEnrollment = await _context.Enrollments.FindAsync(1);
+        var updatedEnrollment = await _context.Enrollments.FindAsync(_enrollment1Id);
         updatedEnrollment.Should().NotBeNull();
-        updatedEnrollment!.Status.Should().Be("Completed");
-        updatedEnrollment.CompletionDate.Should().NotBeNull();
-        updatedEnrollment.CompletionDate.Should().BeOnOrAfter(beforeUpdate);
+        updatedEnrollment!.EnrollmentType.Should().Be(EnrollmentType.Enrolled);
+        // Note: The new model doesn't have a completion date - this is handled via EnrollmentInfo JSON
     }
 
     [Fact]
@@ -282,13 +334,13 @@ public class EnrollmentServiceTests : IDisposable
     [Fact]
     public async Task UpdateEnrollmentStatusAsync_Should_NotSetCompletionDate_WhenStatusIsNotCompleted()
     {
-        // Arrange - Get an enrollment that currently has a completion date
-        var enrollmentWithCompletion = await _context.Enrollments.FindAsync(3);
-        enrollmentWithCompletion.Should().NotBeNull();
-        enrollmentWithCompletion!.CompletionDate.Should().NotBeNull();
+        // Arrange - Get an enrollment that currently has withdrawn status
+        var enrollmentWithdrawn = await _context.Enrollments.FindAsync(_enrollment3Id);
+        enrollmentWithdrawn.Should().NotBeNull();
+        enrollmentWithdrawn!.EnrollmentType.Should().Be(EnrollmentType.Withdrawn);
 
-        // Act - Change status to something other than "Completed"
-        var result = await _service.UpdateEnrollmentStatusAsync(3, "Active");
+        // Act - Change status to Active
+        var result = await _service.UpdateEnrollmentStatusAsync(_enrollment3Id.GetHashCode(), "Active");
 
         // Assert
         result.Should().NotBeNull();
