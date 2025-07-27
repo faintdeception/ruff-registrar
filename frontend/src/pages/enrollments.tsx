@@ -157,10 +157,12 @@ export default function EnrollmentsPage() {
                 <h1 className="ml-3 text-2xl font-bold text-gray-900">Enrollments</h1>
               </div>
               <div className="flex space-x-3">
-                <Link href="/students" className="btn btn-secondary">
-                  <UserGroupIcon className="h-5 w-5" />
-                  Students
-                </Link>
+                {isAdmin && (
+                  <Link href="/students" className="btn btn-secondary">
+                    <UserGroupIcon className="h-5 w-5" />
+                    Students
+                  </Link>
+                )}
                 <Link href="/courses" className="btn btn-secondary">
                   <BookOpenIcon className="h-5 w-5" />
                   Courses

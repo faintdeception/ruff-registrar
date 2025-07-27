@@ -7,6 +7,7 @@ import {
   PlusIcon,
   AcademicCapIcon,
   XMarkIcon,
+  XCircleIcon,
   CalendarIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
@@ -95,6 +96,20 @@ export default function StudentsPage() {
     }
     return age;
   };
+
+  if (!isAdmin) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <XCircleIcon className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600">You need administrator privileges to access this page.</p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   if (loading) {
     return (
