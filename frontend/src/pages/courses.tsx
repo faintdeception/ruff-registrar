@@ -133,7 +133,7 @@ export default function CoursesPage() {
         throw new Error('No authentication token found');
       }
 
-      const coursesResponse = await fetch(`/api/newcourses?semesterId=${semesterId}`, {
+      const coursesResponse = await fetch(`/api/courses?semesterId=${semesterId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export default function CoursesPage() {
         ageGroup: courseData.ageGroup
       };
 
-      const response = await fetch('/api/newcourses', {
+      const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fetchOptions.body = JSON.stringify(req.body);
     }
 
-    // Build the URL with query parameters
+    // Build the URL based on method and query parameters
     let url = `${API_BASE_URL}/api/courses`;
     if (req.method === 'GET' && req.query.semesterId) {
       url = `${API_BASE_URL}/api/courses/semester/${req.query.semesterId}`;

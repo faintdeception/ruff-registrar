@@ -24,14 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fetchOptions.body = JSON.stringify(req.body);
     }
 
-    // Build the URL with query parameters
-    let url = `${API_BASE_URL}/api/courses`;
-    if (req.method === 'GET' && req.query.semesterId) {
-      url = `${API_BASE_URL}/api/courses/semester/${req.query.semesterId}`;
-    }
-
     // Forward the request to the actual backend API
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(`${API_BASE_URL}/api/students`, fetchOptions);
 
     // Check if response is JSON
     const contentType = response.headers.get('content-type');

@@ -162,42 +162,42 @@ export default function Home() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/students/new" className="group">
+          <Link href="/account-holder" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <UserGroupIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Add Student</h3>
-                <p className="text-sm text-gray-600">Register a new student</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Manage Students</h3>
+                <p className="text-sm text-gray-600">View and manage your students</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/courses/new" className="group">
+          <Link href="/courses" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <BookOpenIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Add Course</h3>
-                <p className="text-sm text-gray-600">Create a new course</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Browse Courses</h3>
+                <p className="text-sm text-gray-600">View available courses</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/enrollments/new" className="group">
+          <Link href="/enrollments" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <ClipboardDocumentListIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Enroll Student</h3>
-                <p className="text-sm text-gray-600">Enroll student in course</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Enrollments</h3>
+                <p className="text-sm text-gray-600">Manage course enrollments</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/grades/new" className="group">
+          <Link href="/grades" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <ChartBarIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Record Grade</h3>
-                <p className="text-sm text-gray-600">Add a new grade record</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Grades</h3>
+                <p className="text-sm text-gray-600">View and manage grades</p>
               </div>
             </div>
           </Link>
