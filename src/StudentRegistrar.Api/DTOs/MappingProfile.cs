@@ -46,11 +46,13 @@ public class MappingProfile : Profile
 
         // Course mappings (using new Course model)
         CreateMap<Course, CourseDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.GetHashCode())) // Convert Guid to int for legacy API compatibility
-            .ForMember(dest => dest.CreditHours, opt => opt.MapFrom(src => 3)) // Default credit hours since new model doesn't have this
-            .ForMember(dest => dest.Instructor, opt => opt.MapFrom(src => string.Join(", ", src.CourseInstructors.Select(ci => ci.FullName))))
-            .ForMember(dest => dest.AcademicYear, opt => opt.MapFrom(src => src.Semester != null ? src.Semester.Name : ""))
-            .ForMember(dest => dest.Semester, opt => opt.MapFrom(src => src.Semester != null ? src.Semester.Code : ""));
+            .ForMember(dest => dest.TimeSlot, opt => opt.MapFrom(src => src.TimeSlot))
+            .ForMember(dest => dest.CurrentEnrollment, opt => opt.MapFrom(src => src.CurrentEnrollment))
+            .ForMember(dest => dest.AvailableSpots, opt => opt.MapFrom(src => src.AvailableSpots))
+            .ForMember(dest => dest.IsFull, opt => opt.MapFrom(src => src.IsFull))
+            .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors))
+            .ForMember(dest => dest.InstructorNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.FullName).ToList()))
+            .ForMember(dest => dest.Semester, opt => opt.Ignore()); // Ignore to prevent circular reference
         
         CreateMap<CreateCourseDto, Course>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -327,16 +329,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.PeriodConfigJson, opt => opt.Ignore());
-            
-        CreateMap<Course, NewCourseDto>()
-            .ForMember(dest => dest.TimeSlot, opt => opt.MapFrom(src => src.TimeSlot))
-            .ForMember(dest => dest.CurrentEnrollment, opt => opt.MapFrom(src => src.CurrentEnrollment))
-            .ForMember(dest => dest.AvailableSpots, opt => opt.MapFrom(src => src.AvailableSpots))
-            .ForMember(dest => dest.IsFull, opt => opt.MapFrom(src => src.IsFull))
-            .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors))
-            .ForMember(dest => dest.InstructorNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.FullName).ToList()))
-            .ForMember(dest => dest.Semester, opt => opt.Ignore()); // Ignore to prevent circular reference
-        CreateMap<CreateNewCourseDto, Course>()
+        CreateMap<CreateCourseDto, Course>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Semester, opt => opt.Ignore())
             .ForMember(dest => dest.CourseInstructors, opt => opt.Ignore())
@@ -344,7 +337,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore());
-        CreateMap<UpdateNewCourseDto, Course>()
+        CreateMap<UpdateCourseDto, Course>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.SemesterId, opt => opt.Ignore())
             .ForMember(dest => dest.Semester, opt => opt.Ignore())

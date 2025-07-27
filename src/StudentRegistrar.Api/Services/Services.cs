@@ -1116,18 +1116,18 @@ public class SemesterService : ISemesterService
     }
 }
 
-public class NewCourseService : INewCourseService
+public class CourseServiceV2 : ICourseServiceV2
 {
     private readonly StudentRegistrarDbContext _context;
     private readonly IMapper _mapper;
 
-    public NewCourseService(StudentRegistrarDbContext context, IMapper mapper)
+    public CourseServiceV2(StudentRegistrarDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<NewCourseDto>> GetAllCoursesAsync()
+    public async Task<IEnumerable<CourseDto>> GetAllCoursesAsync()
     {
         var courses = await _context.Courses
             .Include(c => c.Semester)
@@ -1137,10 +1137,10 @@ public class NewCourseService : INewCourseService
             .ThenBy(c => c.Name)
             .ToListAsync();
         
-        return _mapper.Map<IEnumerable<NewCourseDto>>(courses);
+        return _mapper.Map<IEnumerable<CourseDto>>(courses);
     }
 
-    public async Task<IEnumerable<NewCourseDto>> GetCoursesBySemesterAsync(Guid semesterId)
+    public async Task<IEnumerable<CourseDto>> GetCoursesBySemesterAsync(Guid semesterId)
     {
         var courses = await _context.Courses
             .Include(c => c.Semester)
@@ -1150,10 +1150,10 @@ public class NewCourseService : INewCourseService
             .OrderBy(c => c.Name)
             .ToListAsync();
         
-        return _mapper.Map<IEnumerable<NewCourseDto>>(courses);
+        return _mapper.Map<IEnumerable<CourseDto>>(courses);
     }
 
-    public async Task<NewCourseDto?> GetCourseByIdAsync(Guid id)
+    public async Task<CourseDto?> GetCourseByIdAsync(Guid id)
     {
         var course = await _context.Courses
             .Include(c => c.Semester)
@@ -1161,10 +1161,10 @@ public class NewCourseService : INewCourseService
             .Include(c => c.Enrollments)
             .FirstOrDefaultAsync(c => c.Id == id);
         
-        return course != null ? _mapper.Map<NewCourseDto>(course) : null;
+        return course != null ? _mapper.Map<CourseDto>(course) : null;
     }
 
-    public async Task<NewCourseDto> CreateCourseAsync(CreateNewCourseDto createDto)
+    public async Task<CourseDto> CreateCourseAsync(CreateCourseDto createDto)
     {
         var course = _mapper.Map<Course>(createDto);
         course.Id = Guid.NewGuid();
@@ -1181,10 +1181,10 @@ public class NewCourseService : INewCourseService
             .Include(c => c.Enrollments)
             .FirstOrDefaultAsync(c => c.Id == course.Id);
         
-        return _mapper.Map<NewCourseDto>(createdCourse!);
+        return _mapper.Map<CourseDto>(createdCourse!);
     }
 
-    public async Task<NewCourseDto?> UpdateCourseAsync(Guid id, UpdateNewCourseDto updateDto)
+    public async Task<CourseDto?> UpdateCourseAsync(Guid id, UpdateCourseDto updateDto)
     {
         var course = await _context.Courses
             .Include(c => c.Semester)
@@ -1200,7 +1200,7 @@ public class NewCourseService : INewCourseService
         
         await _context.SaveChangesAsync();
         
-        return _mapper.Map<NewCourseDto>(course);
+        return _mapper.Map<CourseDto>(course);
     }
 
     public async Task<bool> DeleteCourseAsync(Guid id)

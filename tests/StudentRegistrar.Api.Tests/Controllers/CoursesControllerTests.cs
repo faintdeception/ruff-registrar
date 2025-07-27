@@ -23,10 +23,11 @@ public class CoursesControllerTests
     public async Task GetCourses_Should_ReturnOkWithCourses()
     {
         // Arrange
+        var semesterId = Guid.NewGuid();
         var expectedCourses = new List<CourseDto>
         {
-            new() { Id = 1, Name = "Mathematics 101", Code = "MATH101", CreditHours = 3 },
-            new() { Id = 2, Name = "Physics 201", Code = "PHYS201", CreditHours = 4 }
+            new() { Id = Guid.NewGuid(), SemesterId = semesterId, Name = "Mathematics 101", Code = "MATH101", MaxCapacity = 25, Fee = 150.00m, AgeGroup = "Elementary" },
+            new() { Id = Guid.NewGuid(), SemesterId = semesterId, Name = "Physics 201", Code = "PHYS201", MaxCapacity = 20, Fee = 200.00m, AgeGroup = "Middle School" }
         };
 
         _mockCourseService
@@ -47,13 +48,17 @@ public class CoursesControllerTests
     public async Task GetCourse_Should_ReturnOkWithCourse_WhenCourseExists()
     {
         // Arrange
-        var courseId = 1;
+        var courseId = Guid.NewGuid();
+        var semesterId = Guid.NewGuid();
         var expectedCourse = new CourseDto 
         { 
             Id = courseId, 
+            SemesterId = semesterId,
             Name = "Mathematics 101", 
             Code = "MATH101", 
-            CreditHours = 3 
+            MaxCapacity = 25,
+            Fee = 150.00m,
+            AgeGroup = "Elementary"
         };
 
         _mockCourseService
@@ -74,7 +79,7 @@ public class CoursesControllerTests
     public async Task GetCourse_Should_ReturnNotFound_WhenCourseDoesNotExist()
     {
         // Arrange
-        var courseId = 999;
+        var courseId = Guid.NewGuid();
 
         _mockCourseService
             .Setup(s => s.GetCourseByIdAsync(courseId))
@@ -92,25 +97,30 @@ public class CoursesControllerTests
     public async Task CreateCourse_Should_ReturnCreatedCourse_WhenValidData()
     {
         // Arrange
+        var semesterId = Guid.NewGuid();
         var createDto = new CreateCourseDto
         {
+            SemesterId = semesterId,
             Name = "New Course",
             Code = "NEW101",
-            CreditHours = 3,
-            Instructor = "Dr. Smith",
-            AcademicYear = "2024-25",
-            Semester = "Fall"
+            MaxCapacity = 25,
+            Fee = 150.00m,
+            AgeGroup = "Elementary",
+            Room = "Room 101",
+            PeriodCode = "P1"
         };
 
         var createdCourse = new CourseDto
         {
-            Id = 3,
+            Id = Guid.NewGuid(),
+            SemesterId = semesterId,
             Name = createDto.Name,
             Code = createDto.Code,
-            CreditHours = createDto.CreditHours,
-            Instructor = createDto.Instructor,
-            AcademicYear = createDto.AcademicYear,
-            Semester = createDto.Semester
+            MaxCapacity = createDto.MaxCapacity,
+            Fee = createDto.Fee,
+            AgeGroup = createDto.AgeGroup,
+            Room = createDto.Room,
+            PeriodCode = createDto.PeriodCode
         };
 
         _mockCourseService
@@ -131,26 +141,30 @@ public class CoursesControllerTests
     public async Task UpdateCourse_Should_ReturnOkWithUpdatedCourse_WhenCourseExists()
     {
         // Arrange
-        var courseId = 1;
+        var courseId = Guid.NewGuid();
+        var semesterId = Guid.NewGuid();
         var updateDto = new UpdateCourseDto
         {
             Name = "Updated Course",
             Code = "UPD101",
-            CreditHours = 4,
-            Instructor = "Dr. Updated",
-            AcademicYear = "2024-25",
-            Semester = "Spring"
+            MaxCapacity = 30,
+            Fee = 175.00m,
+            AgeGroup = "Middle School",
+            Room = "Room 102",
+            PeriodCode = "P2"
         };
 
         var updatedCourse = new CourseDto
         {
             Id = courseId,
+            SemesterId = semesterId,
             Name = updateDto.Name,
             Code = updateDto.Code,
-            CreditHours = updateDto.CreditHours,
-            Instructor = updateDto.Instructor,
-            AcademicYear = updateDto.AcademicYear,
-            Semester = updateDto.Semester
+            MaxCapacity = updateDto.MaxCapacity,
+            Fee = updateDto.Fee,
+            AgeGroup = updateDto.AgeGroup,
+            Room = updateDto.Room,
+            PeriodCode = updateDto.PeriodCode
         };
 
         _mockCourseService

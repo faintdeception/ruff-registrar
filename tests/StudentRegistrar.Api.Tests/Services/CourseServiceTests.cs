@@ -283,13 +283,15 @@ public class CourseServiceTests : IDisposable
         // Arrange
         var createDto = new CreateCourseDto
         {
+            SemesterId = _fallSemesterId,
             Name = "Chemistry 101",
             Code = "CHEM101",
             Description = "Basic Chemistry",
-            CreditHours = 4,
-            Instructor = "Dr. Wilson",
-            AcademicYear = "2024-25",
-            Semester = "Spring"
+            MaxCapacity = 30,
+            Fee = 250.00m,
+            AgeGroup = "High School",
+            Room = "Lab 1",
+            PeriodCode = "P3"
         };
 
         // Act
@@ -299,12 +301,12 @@ public class CourseServiceTests : IDisposable
         result.Should().NotBeNull();
         result.Name.Should().Be("Chemistry 101");
         result.Code.Should().Be("CHEM101");
-        result.CreditHours.Should().Be(4);
-        result.Instructor.Should().Be("Dr. Wilson");
+        result.MaxCapacity.Should().Be(30);
+        result.Fee.Should().Be(250.00m);
 
         // Verify it was saved to database
         var allCourses = await _context.Courses.ToListAsync();
-        var savedCourse = allCourses.FirstOrDefault(c => c.Id.GetHashCode() == result.Id);
+        var savedCourse = allCourses.FirstOrDefault(c => c.Id == result.Id);
         savedCourse.Should().NotBeNull();
         savedCourse!.Name.Should().Be("Chemistry 101");
     }
@@ -318,21 +320,24 @@ public class CourseServiceTests : IDisposable
             Name = "Advanced Mathematics",
             Code = "MATH101",
             Description = "Advanced Mathematical Concepts",
-            CreditHours = 4,
-            Instructor = "Prof. Johnson",
-            AcademicYear = "2024-25",
+            MaxCapacity = 25,
+            Fee = 300.00m,
+            AgeGroup = "High School",
+            Room = "Room 201",
+            PeriodCode = "P1"
+        };
             Semester = "Fall"
         };
 
         // Act
-        var result = await _service.UpdateCourseAsync(_mathCourseId.GetHashCode(), updateDto);
+        var result = await _service.UpdateCourseAsync(_mathCourseId, updateDto);
 
         // Assert
         result.Should().NotBeNull();
         result!.Name.Should().Be("Advanced Mathematics");
         result.Description.Should().Be("Advanced Mathematical Concepts");
-        result.CreditHours.Should().Be(4);
-        result.Instructor.Should().Be("Prof. Johnson");
+        result.MaxCapacity.Should().Be(25);
+        result.Fee.Should().Be(300.00m);
 
         // Verify it was updated in database
         var allCourses = await _context.Courses.ToListAsync();

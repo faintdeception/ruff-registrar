@@ -31,6 +31,15 @@ builder.Services.AddSwaggerGen();
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+// Add repository services
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IStudentRepository, StudentRegistrar.Data.Repositories.StudentRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IAccountHolderRepository, StudentRegistrar.Data.Repositories.AccountHolderRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IEnrollmentRepository, StudentRegistrar.Data.Repositories.EnrollmentRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ISemesterRepository, StudentRegistrar.Data.Repositories.SemesterRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseRepository, StudentRegistrar.Data.Repositories.CourseRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IPaymentRepository, StudentRegistrar.Data.Repositories.PaymentRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseInstructorRepository, StudentRegistrar.Data.Repositories.CourseInstructorRepository>();
+
 // Add application services
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
@@ -42,7 +51,7 @@ builder.Services.AddScoped<IEducatorService, EducatorService>();
 builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
 // New course system services
 builder.Services.AddScoped<ISemesterService, SemesterService>();
-builder.Services.AddScoped<INewCourseService, NewCourseService>();
+builder.Services.AddScoped<ICourseServiceV2, CourseServiceV2>();
 
 // Add HttpClient for Keycloak
 builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();

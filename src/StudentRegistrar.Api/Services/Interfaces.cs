@@ -86,13 +86,13 @@ public interface ISemesterService
     Task<bool> DeleteSemesterAsync(Guid id);
 }
 
-public interface INewCourseService
+public interface ICourseServiceV2
 {
-    Task<IEnumerable<NewCourseDto>> GetAllCoursesAsync();
-    Task<IEnumerable<NewCourseDto>> GetCoursesBySemesterAsync(Guid semesterId);
-    Task<NewCourseDto?> GetCourseByIdAsync(Guid id);
-    Task<NewCourseDto> CreateCourseAsync(CreateNewCourseDto createDto);
-    Task<NewCourseDto?> UpdateCourseAsync(Guid id, UpdateNewCourseDto updateDto);
+    Task<IEnumerable<CourseDto>> GetAllCoursesAsync();
+    Task<IEnumerable<CourseDto>> GetCoursesBySemesterAsync(Guid semesterId);
+    Task<CourseDto?> GetCourseByIdAsync(Guid id);
+    Task<CourseDto> CreateCourseAsync(CreateCourseDto createDto);
+    Task<CourseDto?> UpdateCourseAsync(Guid id, UpdateCourseDto updateDto);
     Task<bool> DeleteCourseAsync(Guid id);
 }
 

@@ -101,72 +101,56 @@ public class UpdateStudentDto
 
 public class CourseDto
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
+    public Guid SemesterId { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Code { get; set; } = string.Empty;
+    public string? Code { get; set; }
     public string? Description { get; set; }
-    public int CreditHours { get; set; }
-    public string Instructor { get; set; } = string.Empty;
-    public string AcademicYear { get; set; } = string.Empty;
-    public string Semester { get; set; } = string.Empty;
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; }
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string? TimeSlot { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
+    public int CurrentEnrollment { get; set; }
+    public int AvailableSpots { get; set; }
+    public bool IsFull { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public SemesterDto? Semester { get; set; }
+    public List<CourseInstructorDto> Instructors { get; set; } = new();
+    public List<string> InstructorNames { get; set; } = new();
 }
 
 public class CreateCourseDto
 {
-    [Required]
-    [StringLength(200)]
+    public Guid SemesterId { get; set; }
     public string Name { get; set; } = string.Empty;
-    
-    [Required]
-    [StringLength(20)]
-    public string Code { get; set; } = string.Empty;
-    
-    [StringLength(1000)]
+    public string? Code { get; set; }
     public string? Description { get; set; }
-    
-    [Required]
-    [Range(1, 10)]
-    public int CreditHours { get; set; }
-    
-    [Required]
-    [StringLength(100)]
-    public string Instructor { get; set; } = string.Empty;
-    
-    [Required]
-    public string AcademicYear { get; set; } = string.Empty;
-    
-    [Required]
-    public string Semester { get; set; } = string.Empty;
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; } = 0;
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
 }
 
 public class UpdateCourseDto
 {
-    [Required]
-    [StringLength(200)]
     public string Name { get; set; } = string.Empty;
-    
-    [Required]
-    [StringLength(20)]
-    public string Code { get; set; } = string.Empty;
-    
-    [StringLength(1000)]
+    public string? Code { get; set; }
     public string? Description { get; set; }
-    
-    [Required]
-    [Range(1, 10)]
-    public int CreditHours { get; set; }
-    
-    [Required]
-    [StringLength(100)]
-    public string Instructor { get; set; } = string.Empty;
-    
-    [Required]
-    public string AcademicYear { get; set; } = string.Empty;
-    
-    [Required]
-    public string Semester { get; set; } = string.Empty;
+    public string? Room { get; set; }
+    public int MaxCapacity { get; set; }
+    public decimal Fee { get; set; }
+    public string? PeriodCode { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
 }
 
 public class EnrollmentDto
@@ -647,7 +631,7 @@ public class SemesterDto
     public bool IsRegistrationOpen { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public List<NewCourseDto> Courses { get; set; } = new();
+    public List<CourseDto> Courses { get; set; } = new();
 }
 
 public class CreateSemesterDto
@@ -672,56 +656,4 @@ public class UpdateSemesterDto
     public bool IsActive { get; set; }
 }
 
-public class NewCourseDto
-{
-    public Guid Id { get; set; }
-    public Guid SemesterId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Code { get; set; }
-    public string? Description { get; set; }
-    public string? Room { get; set; }
-    public int MaxCapacity { get; set; }
-    public decimal Fee { get; set; }
-    public string? PeriodCode { get; set; }
-    public TimeSpan? StartTime { get; set; }
-    public TimeSpan? EndTime { get; set; }
-    public string? TimeSlot { get; set; }
-    public string AgeGroup { get; set; } = string.Empty;
-    public int CurrentEnrollment { get; set; }
-    public int AvailableSpots { get; set; }
-    public bool IsFull { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public SemesterDto? Semester { get; set; }
-    public List<CourseInstructorDto> Instructors { get; set; } = new();
-    public List<string> InstructorNames { get; set; } = new(); // Add instructor names for frontend compatibility
-}
 
-public class CreateNewCourseDto
-{
-    public Guid SemesterId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Code { get; set; }
-    public string? Description { get; set; }
-    public string? Room { get; set; }
-    public int MaxCapacity { get; set; }
-    public decimal Fee { get; set; } = 0;
-    public string? PeriodCode { get; set; }
-    public TimeSpan? StartTime { get; set; }
-    public TimeSpan? EndTime { get; set; }
-    public string AgeGroup { get; set; } = string.Empty;
-}
-
-public class UpdateNewCourseDto
-{
-    public string Name { get; set; } = string.Empty;
-    public string? Code { get; set; }
-    public string? Description { get; set; }
-    public string? Room { get; set; }
-    public int MaxCapacity { get; set; }
-    public decimal Fee { get; set; }
-    public string? PeriodCode { get; set; }
-    public TimeSpan? StartTime { get; set; }
-    public TimeSpan? EndTime { get; set; }
-    public string AgeGroup { get; set; } = string.Empty;
-}
