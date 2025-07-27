@@ -85,7 +85,7 @@ export default function Home() {
                       ({user?.roles.join(', ')})
                     </span>
                   </div>
-                  <button
+                  <button id="logout-button"
                     onClick={logout}
                     className="flex items-center space-x-1 text-gray-600 hover:text-red-600"
                   >

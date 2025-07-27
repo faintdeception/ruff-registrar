@@ -14,11 +14,14 @@ public class LoginPage
         _wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
     }
 
-    // Page elements - These selectors will need to be updated based on your actual Keycloak login form
+    // Page elements - Updated for your application's login form
     public IWebElement UsernameField => _wait.Until(d => d.FindElement(By.Id("username")));
     public IWebElement PasswordField => _driver.FindElement(By.Id("password"));
-    public IWebElement LoginButton => _driver.FindElement(By.CssSelector("input[type='submit'], button[type='submit']"));
-    public IWebElement ErrorMessage => _driver.FindElement(By.CssSelector(".alert-error, .error-message, #kc-error-message"));
+    public IWebElement LoginButton => _driver.FindElement(By.CssSelector("button[type='submit'], input[type='submit'], .login-button"));
+    
+    // Error message elements
+    public IWebElement LoginErrorHeading => _driver.FindElement(By.XPath("//*[contains(text(), 'Login Error')]"));
+    public IWebElement InvalidCredentialsMessage => _driver.FindElement(By.XPath("//*[contains(text(), 'Invalid user credentials')]"));
 
     // Page actions
     public void EnterUsername(string username)
@@ -50,7 +53,34 @@ public class LoginPage
     {
         try
         {
-            return UsernameField.Displayed && PasswordField.Displayed;
+            // Check if we're on the login URL and have login form elements
+            return _driver.Url.Contains("/login") && 
+                   UsernameField.Displayed && 
+                   PasswordField.Displayed;
+        }
+        catch (NoSuchElementException)
+        {
+            return false;
+        }
+    }
+
+    public bool HasLoginError()
+    {
+        try
+        {
+            return LoginErrorHeading.Displayed;
+        }
+        catch (NoSuchElementException)
+        {
+            return false;
+        }
+    }
+
+    public bool HasInvalidCredentialsMessage()
+    {
+        try
+        {
+            return InvalidCredentialsMessage.Displayed;
         }
         catch (NoSuchElementException)
         {
@@ -60,18 +90,26 @@ public class LoginPage
 
     public bool HasErrorMessage()
     {
-        try
-        {
-            return ErrorMessage.Displayed;
-        }
-        catch (NoSuchElementException)
-        {
-            return false;
-        }
+        // Check for either specific error elements or error text in page source
+        return HasLoginError() || 
+               HasInvalidCredentialsMessage() ||
+               _driver.PageSource.Contains("Login Error") ||
+               _driver.PageSource.Contains("Invalid user credentials");
     }
 
     public string GetErrorMessage()
     {
-        return HasErrorMessage() ? ErrorMessage.Text : string.Empty;
+        try
+        {
+            if (HasLoginError())
+                return LoginErrorHeading.Text;
+            if (HasInvalidCredentialsMessage())
+                return InvalidCredentialsMessage.Text;
+            return "Error message found in page source";
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 }

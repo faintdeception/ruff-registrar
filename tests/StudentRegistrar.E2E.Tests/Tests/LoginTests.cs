@@ -9,170 +9,141 @@ namespace StudentRegistrar.E2E.Tests.Tests;
 public class LoginTests : BaseTest
 {
     [Fact]
-    public void Should_Navigate_To_Home_Page_Successfully()
+    public void Should_Show_Login_Elements_When_Not_Authenticated()
     {
         // Arrange & Act
         NavigateToHome();
+        WaitForPageLoad();
 
-        // Assert
-        // Driver.Title.Should().NotBeNullOrEmpty();
-        Driver.Url.Should().StartWith(BaseUrl);
+        // Assert - Home page should redirect to login when not authenticated
+        Driver.Url.Should().Contain("/login", "Unauthenticated users should be redirected to login page");
+        Driver.PageSource.Should().Contain("username", "Should show username field for login");
+        Driver.PageSource.Should().Contain("password", "Should show password field for login");
+        
+        var loginPage = new LoginPage(Driver);
+        loginPage.IsOnLoginPage().Should().BeTrue("Should display the login form on home page");
     }
 
-    // [Fact]
-    // public void Should_Display_Login_Button_On_Home_Page()
-    // {
-    //     // Arrange
-    //     NavigateToHome();
-    //     var homePage = new HomePage(Driver);
-
-    //     // Act & Assert
-    //     homePage.IsLoaded().Should().BeTrue("Home page should be loaded");
-
-    //     // Check if we can find a login-related element
-    //     var hasLoginElement = IsElementPresent(By.Id("login-form"));
-        
-    //     hasLoginElement.Should().BeTrue("There should be a login button or link on the home page");
-    // }
-
-    // [Fact]
-    // public void Should_Redirect_To_Keycloak_When_Login_Clicked()
-    // {
-    //     // Arrange
-    //     NavigateToHome();
-    //     var homePage = new HomePage(Driver);
-
-    //     // Act
-    //     try
-    //     {
-    //         // Try different possible login element selectors
-    //         IWebElement? loginElement = null;
-            
-    //         if (IsElementPresent(By.Id("login-form")))
-    //             loginElement = Driver.FindElement(By.Id("login-form"));
-    //         else if (IsElementPresent(By.CssSelector("a[href*='login']")))
-    //             loginElement = Driver.FindElement(By.CssSelector("a[href*='login']"));
-    //         else if (IsElementPresent(By.LinkText("Login")))
-    //             loginElement = Driver.FindElement(By.LinkText("Login"));
-    //         else if (IsElementPresent(By.LinkText("Sign In")))
-    //             loginElement = Driver.FindElement(By.LinkText("Sign In"));
-
-    //         loginElement.Should().NotBeNull("Should find a login element");
-    //         loginElement!.Click();
-
-    //         // Wait for redirect
-    //         WaitForElement(By.TagName("body"), 10);
-
-    //         // Assert
-    //         Driver.Url.Should().Contain("auth", "Should redirect to Keycloak authentication page");
-    //     }
-    //     catch (NoSuchElementException ex)
-    //     {
-    //         // If we can't find the login button, let's see what's actually on the page
-    //         var pageSource = Driver.PageSource;
-    //         throw new Exception($"Could not find login element. Page source contains: {pageSource.Substring(0, Math.Min(500, pageSource.Length))}", ex);
-    //     }
-    // }
-
     [Fact]
-    public void Should_Show_Keycloak_Login_Form()
+    public void Should_Display_Error_For_Invalid_Credentials()
     {
         // Arrange
         NavigateToHome();
+        WaitForPageLoad();
+        
+        var loginPage = new LoginPage(Driver);
+        loginPage.IsOnLoginPage().Should().BeTrue("Should be on login page");
 
-        // Act - Navigate to login (this test assumes we can get to the login page)
-        try
-        {
-            // Try to find and click login button
-            IWebElement? loginElement = null;
-            
-            if (IsElementPresent(By.CssSelector("[data-testid='login-button']")))
-                loginElement = Driver.FindElement(By.CssSelector("[data-testid='login-button']"));
-            else if (IsElementPresent(By.CssSelector("a[href*='login']")))
-                loginElement = Driver.FindElement(By.CssSelector("a[href*='login']"));
-            else if (IsElementPresent(By.LinkText("Login")))
-                loginElement = Driver.FindElement(By.LinkText("Login"));
-            else if (IsElementPresent(By.LinkText("Sign In")))
-                loginElement = Driver.FindElement(By.LinkText("Sign In"));
+        // Act - Try to login with invalid credentials
+        loginPage.Login("invalid_user", "invalid_password");
 
-            if (loginElement != null)
-            {
-                loginElement.Click();
-                
-                var loginPage = new LoginPage(Driver);
-                
-                // Assert
-                loginPage.IsOnLoginPage().Should().BeTrue("Should display Keycloak login form");
-            }
-            else
-            {
-                // Skip this test if no login element found
-                Assert.True(true, "Skipping test - no login element found on page");
-            }
-        }
-        catch (Exception)
-        {
-            // If we can't navigate to login, skip this test for now
-            Assert.True(true, "Skipping test - could not navigate to login page");
-        }
+        // Wait for the error response
+        Thread.Sleep(3000);
+
+        // Assert - Should show error message and stay on login page
+        Driver.Url.Should().Contain("/login", "Should remain on login page after invalid credentials");
+        
+        var errorDisplayed = Driver.PageSource.Contains("Login Error") && 
+                           Driver.PageSource.Contains("Invalid user credentials");
+        
+        errorDisplayed.Should().BeTrue("Should display 'Login Error' and 'Invalid user credentials' messages");
     }
 
     [Fact]
-    public void Should_Handle_Invalid_Login_Credentials()
+    public void Should_Login_Successfully_With_Valid_Credentials()
     {
-        // This test will be skipped if we can't get to the login page
-        try
-        {
-            // Arrange
-            NavigateToHome();
-            
-            // Try to navigate to login
-            IWebElement? loginElement = null;
-            
-            if (IsElementPresent(By.CssSelector("[data-testid='login-button']")))
-                loginElement = Driver.FindElement(By.CssSelector("[data-testid='login-button']"));
-            else if (IsElementPresent(By.CssSelector("a[href*='login']")))
-                loginElement = Driver.FindElement(By.CssSelector("a[href*='login']"));
-            else if (IsElementPresent(By.LinkText("Login")))
-                loginElement = Driver.FindElement(By.LinkText("Login"));
-            else if (IsElementPresent(By.LinkText("Sign In")))
-                loginElement = Driver.FindElement(By.LinkText("Sign In"));
+        // Arrange
+        NavigateToHome();
+        WaitForPageLoad();
+        
+        var loginPage = new LoginPage(Driver);
+        loginPage.IsOnLoginPage().Should().BeTrue("Should be on login page");
 
-            if (loginElement == null)
-            {
-                Assert.True(true, "Skipping test - no login element found");
-                return;
-            }
+        // Get credentials from configuration
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
 
-            loginElement.Click();
-            
-            var loginPage = new LoginPage(Driver);
-            
-            if (!loginPage.IsOnLoginPage())
-            {
-                Assert.True(true, "Skipping test - not on login page");
-                return;
-            }
+        // Act - Login with valid credentials
+        loginPage.Login(username, password);
 
-            // Act
-            loginPage.Login("invalid_user", "invalid_password");
+        // Wait for redirect and page load
+        WaitForPageLoad();
+        Thread.Sleep(2000);
 
-            // Wait a moment for the response
-            Thread.Sleep(2000);
+        // Assert - Should be redirected to home page and be logged in
+        Driver.Url.Should().NotContain("/login", "Should be redirected away from login page");
+        Driver.Url.Should().StartWith(BaseUrl, "Should be on the application");
+        
+        var homePage = new HomePage(Driver);
+        homePage.IsLoggedIn().Should().BeTrue("Should be logged in with valid credentials");
+    }
 
-            // Assert
-            // Either we should still be on the login page with an error, or get redirected back with an error
-            var hasError = loginPage.HasErrorMessage() || 
-                          Driver.Url.Contains("error") ||
-                          Driver.PageSource.Contains("Invalid") ||
-                          Driver.PageSource.Contains("error");
-            
-            hasError.Should().BeTrue("Should display error message for invalid credentials");
-        }
-        catch (Exception)
-        {
-            // Skip this test if we encounter issues
-            Assert.True(true, "Skipping test - encountered error during login flow");
-        }
+    [Fact]
+    public void Should_Logout_And_Redirect_To_Login()
+    {
+        // Arrange - First login
+        NavigateToHome();
+        WaitForPageLoad();
+        
+        var loginPage = new LoginPage(Driver);
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
+        
+        loginPage.Login(username, password);
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        var homePage = new HomePage(Driver);
+        homePage.IsLoggedIn().Should().BeTrue("Should be logged in before logout test");
+
+        // Act - Logout using the logout button
+        homePage.ClickLogout();
+
+        // Wait for redirect
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        // Assert - Should be redirected back to login page
+        Driver.Url.Should().Contain("/login", "Should be redirected to login page after logout");
+        
+        var loginPageAfterLogout = new LoginPage(Driver);
+        loginPageAfterLogout.IsOnLoginPage().Should().BeTrue("Should display login form after logout");
+    }
+
+    [Fact]
+    public void Should_Complete_Full_Login_Logout_Cycle()
+    {
+        // This test verifies the complete flow: redirect to login -> login -> home -> logout -> login
+
+        // Step 1: Navigate to home (should redirect to login)
+        NavigateToHome();
+        WaitForPageLoad();
+        Thread.Sleep(2000); // Wait for redirect to complete
+        Driver.Url.Should().Contain("/login", "Step 1: Should redirect to login when not authenticated");
+
+        // Step 2: Login with valid credentials
+        var loginPage = new LoginPage(Driver);
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
+        
+        loginPage.Login(username, password);
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        // Step 3: Verify logged in and on home page
+        Driver.Url.Should().NotContain("/login", "Step 3: Should be redirected away from login page");
+        var homePage = new HomePage(Driver);
+        homePage.IsLoggedIn().Should().BeTrue("Step 3: Should be logged in");
+
+        // Step 4: Logout
+        homePage.ClickLogout();
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        // Step 5: Verify redirected back to login
+        Thread.Sleep(2000); // Wait for redirect after logout
+        Driver.Url.Should().Contain("/login", "Step 5: Should be redirected to login page after logout");
+        var loginPageAfterLogout = new LoginPage(Driver);
+        loginPageAfterLogout.IsOnLoginPage().Should().BeTrue("Step 5: Should display login form after logout");
     }
 }

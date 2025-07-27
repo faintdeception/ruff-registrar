@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
 
 namespace StudentRegistrar.E2E.Tests.Pages;
 
@@ -12,14 +13,14 @@ public class HomePage
     }
 
     // Page elements
-    public IWebElement LoginButton => _driver.FindElement(By.CssSelector("[data-testid='login-button']"));
     public IWebElement PageTitle => _driver.FindElement(By.TagName("h1"));
     public IWebElement NavigationBar => _driver.FindElement(By.TagName("nav"));
+    public IWebElement LogoutButton => _driver.FindElement(By.Id("logout-button"));
 
     // Page actions
-    public void ClickLogin()
+    public void ClickLogout()
     {
-        LoginButton.Click();
+        LogoutButton.Click();
     }
 
     // Page validations
@@ -37,16 +38,42 @@ public class HomePage
 
     public string GetPageTitle()
     {
-        return PageTitle.Text;
+        try
+        {
+            return PageTitle.Text;
+        }
+        catch (NoSuchElementException)
+        {
+            return string.Empty;
+        }
     }
 
     public bool IsLoggedIn()
     {
         try
         {
-            // Look for user menu or logout button to determine if logged in
-            var userMenu = _driver.FindElement(By.CssSelector("[data-testid='user-menu']"));
-            return userMenu.Displayed;
+            // Check for logout button with id "logout-button" to determine if logged in
+            return LogoutButton.Displayed;
+        }
+        catch (NoSuchElementException)
+        {
+            try
+            {
+                // Alternative: check if URL doesn't contain login
+                return !_driver.Url.Contains("/login");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    public bool HasLogoutButton()
+    {
+        try
+        {
+            return LogoutButton.Displayed;
         }
         catch (NoSuchElementException)
         {
