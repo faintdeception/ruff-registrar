@@ -26,8 +26,7 @@ var apiService = builder.AddProject<StudentRegistrar_Api>("api")
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
     .WithEnvironment("Keycloak__Realm", keycloakRealm)
     .WithEnvironment("Keycloak__ClientId", keycloakClientId)
-    .WithEnvironment("Keycloak__ClientSecret", keycloakClientSecret)
-    .WithHttpEndpoint(port: 5000, name: "http");
+    .WithEnvironment("Keycloak__ClientSecret", keycloakClientSecret);
 
 // Next.js frontend
 var frontend = builder.AddNpmApp("frontend", "../../frontend", "dev")
@@ -38,6 +37,6 @@ var frontend = builder.AddNpmApp("frontend", "../../frontend", "dev")
     .WithExternalHttpEndpoints();
 
 // Configure the frontend to use the API
-frontend.WithEnvironment("NEXT_PUBLIC_API_URL", "http://localhost:5000");
+frontend.WithEnvironment("NEXT_PUBLIC_API_URL", apiService.GetEndpoint("http"));
 
 await builder.Build().RunAsync();
