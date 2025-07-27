@@ -26,14 +26,41 @@ public class WebDriverFactory : IDisposable
         var headless = bool.Parse(_configuration["SeleniumSettings:Headless"] ?? "false");
         if (headless)
         {
-            options.AddArgument("--headless");
+            options.AddArgument("--headless=new"); // Use new headless mode
         }
 
-        // Add additional Chrome options for better stability
+        // Add Chrome options for better stability and crash prevention
         options.AddArgument("--no-sandbox");
         options.AddArgument("--disable-dev-shm-usage");
         options.AddArgument("--disable-gpu");
+        options.AddArgument("--disable-software-rasterizer");
+        options.AddArgument("--disable-background-timer-throttling");
+        options.AddArgument("--disable-backgrounding-occluded-windows");
+        options.AddArgument("--disable-renderer-backgrounding");
+        options.AddArgument("--disable-features=TranslateUI");
+        options.AddArgument("--disable-ipc-flooding-protection");
         options.AddArgument("--window-size=1920,1080");
+        options.AddArgument("--start-maximized");
+        
+        // Memory and performance optimizations
+        options.AddArgument("--memory-pressure-off");
+        options.AddArgument("--max_old_space_size=4096");
+        
+        // Disable extensions and plugins that can cause crashes
+        options.AddArgument("--disable-extensions");
+        options.AddArgument("--disable-plugins");
+        options.AddArgument("--disable-default-apps");
+        
+        // Add user data directory to prevent profile conflicts
+        var tempUserDataDir = Path.Combine(Path.GetTempPath(), $"ChromeTest_{Guid.NewGuid()}");
+        options.AddArgument($"--user-data-dir={tempUserDataDir}");
+        
+        // Enable logging for debugging
+        options.AddArgument("--enable-logging");
+        options.AddArgument("--log-level=0");
+        
+        // Set page load strategy for better reliability
+        options.PageLoadStrategy = PageLoadStrategy.Normal;
 
         _driver = new ChromeDriver(options);
 
@@ -49,7 +76,27 @@ public class WebDriverFactory : IDisposable
 
     public void Dispose()
     {
-        _driver?.Quit();
-        _driver?.Dispose();
+        try
+        {
+            // Close all windows and quit properly
+            _driver?.Close();
+            _driver?.Quit();
+        }
+        catch (Exception)
+        {
+            // Ignore errors during cleanup
+        }
+        finally
+        {
+            try
+            {
+                _driver?.Dispose();
+            }
+            catch (Exception)
+            {
+                // Ignore errors during disposal
+            }
+            _driver = null;
+        }
     }
 }
