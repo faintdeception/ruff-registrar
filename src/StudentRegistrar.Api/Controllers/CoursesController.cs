@@ -10,13 +10,14 @@ namespace StudentRegistrar.Api.Controllers;
 [Authorize]
 public class CoursesController : ControllerBase
 {
-    private readonly ICourseService _courseService;
+    private readonly ICourseServiceV2 _courseService;
 
-    public CoursesController(ICourseService courseService)
+    public CoursesController(ICourseServiceV2 courseService)
     {
         _courseService = courseService;
     }
 
+    // Modern Guid-based endpoints
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CourseDto>>> GetCourses()
     {
@@ -24,8 +25,15 @@ public class CoursesController : ControllerBase
         return Ok(courses);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<CourseDto>> GetCourse(int id)
+    [HttpGet("semester/{semesterId:guid}")]
+    public async Task<ActionResult<IEnumerable<CourseDto>>> GetCoursesBySemester(Guid semesterId)
+    {
+        var courses = await _courseService.GetCoursesBySemesterAsync(semesterId);
+        return Ok(courses);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<CourseDto>> GetCourse(Guid id)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
         if (course == null)
@@ -41,8 +49,8 @@ public class CoursesController : ControllerBase
         return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<CourseDto>> UpdateCourse(int id, UpdateCourseDto updateCourseDto)
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<CourseDto>> UpdateCourse(Guid id, UpdateCourseDto updateCourseDto)
     {
         var course = await _courseService.UpdateCourseAsync(id, updateCourseDto);
         if (course == null)
@@ -51,8 +59,8 @@ public class CoursesController : ControllerBase
         return Ok(course);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteCourse(int id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteCourse(Guid id)
     {
         var result = await _courseService.DeleteCourseAsync(id);
         if (!result)
@@ -61,17 +69,43 @@ public class CoursesController : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("{id}/enrollments")]
-    public async Task<ActionResult<IEnumerable<EnrollmentDto>>> GetCourseEnrollments(int id)
+    // Legacy integer ID endpoints - will be deprecated
+    [HttpGet("legacy/{id:int}")]
+    [Obsolete("Use GetCourse(Guid id) instead")]
+    public async Task<ActionResult<CourseDto>> GetCourseLegacy(int id)
     {
-        var enrollments = await _courseService.GetCourseEnrollmentsAsync(id);
-        return Ok(enrollments);
+        // Legacy bridge - try to find by hash code
+        var courses = await _courseService.GetAllCoursesAsync();
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == id);
+        if (course == null)
+            return NotFound();
+
+        return Ok(course);
     }
 
-    [HttpGet("{id}/grades")]
-    public async Task<ActionResult<IEnumerable<GradeRecordDto>>> GetCourseGrades(int id)
+    [HttpPut("legacy/{id:int}")]
+    [Obsolete("Use UpdateCourse(Guid id, UpdateCourseDto) instead")]
+    public async Task<ActionResult<CourseDto>> UpdateCourseLegacy(int id, UpdateCourseDto updateCourseDto)
     {
-        var grades = await _courseService.GetCourseGradesAsync(id);
-        return Ok(grades);
+        // Legacy bridge - try to find by hash code
+        var courses = await _courseService.GetAllCoursesAsync();
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == id);
+        if (course == null)
+            return NotFound();
+
+        return await UpdateCourse(course.Id, updateCourseDto);
+    }
+
+    [HttpDelete("legacy/{id:int}")]
+    [Obsolete("Use DeleteCourse(Guid id) instead")]
+    public async Task<IActionResult> DeleteCourseLegacy(int id)
+    {
+        // Legacy bridge - try to find by hash code
+        var courses = await _courseService.GetAllCoursesAsync();
+        var course = courses.FirstOrDefault(c => c.Id.GetHashCode() == id);
+        if (course == null)
+            return NotFound();
+
+        return await DeleteCourse(course.Id);
     }
 }

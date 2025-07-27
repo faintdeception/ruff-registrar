@@ -40,21 +40,27 @@ builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseRepository,
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IPaymentRepository, StudentRegistrar.Data.Repositories.PaymentRepository>();
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseInstructorRepository, StudentRegistrar.Data.Repositories.CourseInstructorRepository>();
 
-// Add application services
+// Add modernized application services
 builder.Services.AddScoped<IStudentService, StudentService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IGradeService, GradeService>();
-builder.Services.AddScoped<IKeycloakService, KeycloakService>();
-builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
-builder.Services.AddScoped<IEducatorService, EducatorService>();
-builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
-// New course system services
-builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<ICourseServiceV2, CourseServiceV2>();
+builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
+builder.Services.AddScoped<ISemesterService, SemesterService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
-// Add HttpClient for Keycloak
-builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
+// TODO: These services need to be modernized or implemented
+// builder.Services.AddScoped<ICourseService, CourseService>();
+// builder.Services.AddScoped<IGradeService, GradeService>();
+// builder.Services.AddScoped<IKeycloakService, KeycloakService>();
+// builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
+// builder.Services.AddScoped<IEducatorService, EducatorService>();
+// builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
+// New course system services
+// builder.Services.AddScoped<ISemesterService, SemesterService>();
+// builder.Services.AddScoped<ICourseServiceV2, CourseServiceV2>();
+
+// Add HttpClient for Keycloak (when implemented)
+// builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
 
 // Add CORS
 builder.Services.AddCors(options =>

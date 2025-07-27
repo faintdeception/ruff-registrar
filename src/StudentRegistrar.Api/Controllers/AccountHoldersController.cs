@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using StudentRegistrar.Api.Services;
 using StudentRegistrar.Api.DTOs;
-using StudentRegistrar.Data;
 using System.Security.Claims;
 
 namespace StudentRegistrar.Api.Controllers;
@@ -14,16 +13,13 @@ public class AccountHoldersController : ControllerBase
 {
     private readonly IAccountHolderService _accountHolderService;
     private readonly ILogger<AccountHoldersController> _logger;
-    private readonly StudentRegistrarDbContext _context;
 
     public AccountHoldersController(
         IAccountHolderService accountHolderService,
-        ILogger<AccountHoldersController> logger,
-        StudentRegistrarDbContext context)
+        ILogger<AccountHoldersController> logger)
     {
         _accountHolderService = accountHolderService;
         _logger = logger;
-        _context = context;
     }
 
     /// <summary>
@@ -75,17 +71,7 @@ public class AccountHoldersController : ControllerBase
 
             try
             {
-                accountHolder = await _accountHolderService.CreateAccountHolderAsync(createDto);
-                
-                // Manually set the KeycloakUserId since CreateAccountHolderAsync doesn't handle it
-                // This is a temporary workaround - ideally we'd extend the service method
-                var accountHolderEntity = await _context.AccountHolders.FindAsync(Guid.Parse(accountHolder.Id));
-                if (accountHolderEntity != null)
-                {
-                    accountHolderEntity.KeycloakUserId = keycloakUserId;
-                    await _context.SaveChangesAsync();
-                }
-                
+                accountHolder = await _accountHolderService.CreateAccountHolderAsync(createDto, keycloakUserId);
                 _logger.LogInformation("Auto-created account holder for user {UserId}", keycloakUserId);
             }
             catch (Exception ex)

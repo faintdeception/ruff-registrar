@@ -63,19 +63,6 @@ public class EnrollmentRepository : IEnrollmentRepository
         return await GetByCourseIdAsync(courseId);
     }
 
-    public async Task<IEnumerable<Enrollment>> GetByCourseIdAsync(Guid courseId)
-    {
-        return await _context.Enrollments
-            .Include(e => e.Student)
-                .ThenInclude(s => s.AccountHolder)
-            .Include(e => e.Payments)
-            .Where(e => e.CourseId == courseId)
-            .OrderBy(e => e.EnrollmentType)
-            .ThenBy(e => e.WaitlistPosition)
-            .ThenBy(e => e.EnrollmentDate)
-            .ToListAsync();
-    }
-
     public async Task<IEnumerable<Enrollment>> GetBySemesterAsync(Guid semesterId)
     {
         return await _context.Enrollments

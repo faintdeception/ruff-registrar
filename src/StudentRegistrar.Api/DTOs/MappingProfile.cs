@@ -306,6 +306,21 @@ public class MappingProfile : Profile
         CreateMap<Payment, PaymentDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
             
+        CreateMap<CreatePaymentDto, Payment>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollment, opt => opt.Ignore())
+            .ForMember(dest => dest.PaymentInfoJson, opt => opt.MapFrom(src => "{}"));
+            
+        CreateMap<UpdatePaymentDto, Payment>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolderId, opt => opt.Ignore())
+            .ForMember(dest => dest.EnrollmentId, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
+            .ForMember(dest => dest.Enrollment, opt => opt.Ignore());
+            
         // Supporting object mappings
         CreateMap<StudentRegistrar.Models.Address, AddressInfo>().ReverseMap();
         CreateMap<StudentRegistrar.Models.EmergencyContact, EmergencyContactInfo>().ReverseMap();

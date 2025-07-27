@@ -40,9 +40,20 @@ public interface ICourseService
 public interface IEnrollmentService
 {
     Task<IEnumerable<EnrollmentDto>> GetAllEnrollmentsAsync();
-    Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id);
+    Task<EnrollmentDto?> GetEnrollmentByIdAsync(Guid id);
     Task<EnrollmentDto> CreateEnrollmentAsync(CreateEnrollmentDto createEnrollmentDto);
+    Task<bool> DeleteEnrollmentAsync(Guid id);
+    Task<EnrollmentDto?> UpdateEnrollmentStatusAsync(Guid id, string status);
+    Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByStudentAsync(Guid studentId);
+    Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByCourseAsync(Guid courseId);
+    Task<IEnumerable<EnrollmentDto>> GetEnrollmentsBySemesterAsync(Guid semesterId);
+    
+    // Legacy support - will be deprecated
+    [Obsolete("Use GetEnrollmentByIdAsync(Guid id) instead")]
+    Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id);
+    [Obsolete("Use DeleteEnrollmentAsync(Guid id) instead")]
     Task<bool> DeleteEnrollmentAsync(int id);
+    [Obsolete("Use UpdateEnrollmentStatusAsync(Guid id, string status) instead")]
     Task<EnrollmentDto?> UpdateEnrollmentStatusAsync(int id, string status);
 }
 
@@ -113,7 +124,23 @@ public interface IAccountHolderService
     Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string userId);
     Task<AccountHolderDto?> GetAccountHolderByIdAsync(Guid id);
     Task<AccountHolderDto> CreateAccountHolderAsync(CreateAccountHolderDto createDto);
+    Task<AccountHolderDto> CreateAccountHolderAsync(CreateAccountHolderDto createDto, string? keycloakUserId);
     Task<AccountHolderDto?> UpdateAccountHolderAsync(Guid id, UpdateAccountHolderDto updateDto);
     Task<StudentDto> AddStudentToAccountAsync(Guid accountHolderId, CreateStudentForAccountDto createDto);
     Task<bool> RemoveStudentFromAccountAsync(Guid accountHolderId, Guid studentId);
+}
+
+public interface IPaymentService
+{
+    Task<IEnumerable<PaymentDto>> GetAllPaymentsAsync();
+    Task<PaymentDto?> GetPaymentByIdAsync(Guid id);
+    Task<IEnumerable<PaymentDto>> GetPaymentsByAccountHolderAsync(Guid accountHolderId);
+    Task<IEnumerable<PaymentDto>> GetPaymentsByEnrollmentAsync(Guid enrollmentId);
+    Task<IEnumerable<PaymentDto>> GetPaymentsByTypeAsync(PaymentType paymentType);
+    Task<PaymentDto> CreatePaymentAsync(CreatePaymentDto createDto);
+    Task<PaymentDto?> UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
+    Task<bool> DeletePaymentAsync(Guid id);
+    Task<decimal> GetTotalPaidByAccountHolderAsync(Guid accountHolderId, PaymentType? type = null);
+    Task<decimal> GetTotalPaidByEnrollmentAsync(Guid enrollmentId);
+    Task<IEnumerable<PaymentDto>> GetPaymentHistoryAsync(Guid accountHolderId, DateTime? fromDate = null, DateTime? toDate = null);
 }
