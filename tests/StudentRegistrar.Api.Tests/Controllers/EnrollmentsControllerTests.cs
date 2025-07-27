@@ -47,10 +47,10 @@ public class EnrollmentsControllerTests
     public async Task GetEnrollment_Should_ReturnOkWithEnrollment_WhenEnrollmentExists()
     {
         // Arrange
-        var enrollmentId = 1;
+        var enrollmentId = Guid.NewGuid();
         var expectedEnrollment = new EnrollmentDto 
         { 
-            Id = enrollmentId, 
+            Id = 1, 
             StudentId = 101, 
             CourseId = 201, 
             Status = "Active",
@@ -75,7 +75,7 @@ public class EnrollmentsControllerTests
     public async Task GetEnrollment_Should_ReturnNotFound_WhenEnrollmentDoesNotExist()
     {
         // Arrange
-        var enrollmentId = 999;
+        var enrollmentId = Guid.NewGuid();
 
         _mockEnrollmentService
             .Setup(s => s.GetEnrollmentByIdAsync(enrollmentId))
@@ -128,12 +128,12 @@ public class EnrollmentsControllerTests
     public async Task UpdateEnrollmentStatus_Should_ReturnOkWithUpdatedEnrollment_WhenEnrollmentExists()
     {
         // Arrange
-        var enrollmentId = 1;
-        var updateDto = new StudentRegistrar.Api.Controllers.UpdateEnrollmentStatusDto { Status = "Completed" };
+        var enrollmentId = Guid.NewGuid();
+        var updateDto = new UpdateEnrollmentStatusDto { Status = "Completed" };
 
         var updatedEnrollment = new EnrollmentDto
         {
-            Id = enrollmentId,
+            Id = 1,
             StudentId = 101,
             CourseId = 201,
             Status = updateDto.Status,
@@ -158,8 +158,8 @@ public class EnrollmentsControllerTests
     public async Task UpdateEnrollmentStatus_Should_ReturnNotFound_WhenEnrollmentDoesNotExist()
     {
         // Arrange
-        var enrollmentId = 999;
-        var updateDto = new StudentRegistrar.Api.Controllers.UpdateEnrollmentStatusDto { Status = "Completed" };
+        var enrollmentId = Guid.NewGuid();
+        var updateDto = new UpdateEnrollmentStatusDto { Status = "Completed" };
 
         _mockEnrollmentService
             .Setup(s => s.UpdateEnrollmentStatusAsync(enrollmentId, updateDto.Status))
@@ -177,7 +177,7 @@ public class EnrollmentsControllerTests
     public async Task DeleteEnrollment_Should_ReturnNoContent_WhenEnrollmentDeletedSuccessfully()
     {
         // Arrange
-        var enrollmentId = 1;
+        var enrollmentId = Guid.NewGuid();
 
         _mockEnrollmentService
             .Setup(s => s.DeleteEnrollmentAsync(enrollmentId))
@@ -194,7 +194,7 @@ public class EnrollmentsControllerTests
     public async Task DeleteEnrollment_Should_ReturnNotFound_WhenEnrollmentNotFound()
     {
         // Arrange
-        var enrollmentId = 999;
+        var enrollmentId = Guid.NewGuid();
 
         _mockEnrollmentService
             .Setup(s => s.DeleteEnrollmentAsync(enrollmentId))

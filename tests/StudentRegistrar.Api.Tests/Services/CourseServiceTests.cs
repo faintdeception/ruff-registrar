@@ -13,7 +13,7 @@ public class CourseServiceTests : IDisposable
 {
     private readonly StudentRegistrarDbContext _context;
     private readonly IMapper _mapper;
-    private readonly CourseService _service;
+    private readonly CourseServiceV2 _service;
     
     // Test data references
     private readonly Guid _mathCourseId = Guid.NewGuid();
@@ -39,7 +39,7 @@ public class CourseServiceTests : IDisposable
         });
         _mapper = config.CreateMapper();
 
-        _service = new CourseService(_context, _mapper);
+        _service = new CourseServiceV2(_context, _mapper);
 
         SeedTestData();
     }
