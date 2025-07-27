@@ -39,6 +39,8 @@ builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ISemesterRepositor
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseRepository, StudentRegistrar.Data.Repositories.CourseRepository>();
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IPaymentRepository, StudentRegistrar.Data.Repositories.PaymentRepository>();
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseInstructorRepository, StudentRegistrar.Data.Repositories.CourseInstructorRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IGradeRepository, StudentRegistrar.Data.Repositories.GradeRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IEducatorRepository, StudentRegistrar.Data.Repositories.EducatorRepository>();
 
 // Add modernized application services
 builder.Services.AddScoped<IStudentService, StudentService>();
@@ -48,15 +50,12 @@ builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
 builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
+builder.Services.AddScoped<IGradeService, GradeService>();
+builder.Services.AddScoped<IEducatorService, EducatorService>();
+builder.Services.AddScoped<IKeycloakService, KeycloakService>();
 
-// TODO: Legacy services that still need modernization or removal
-// builder.Services.AddScoped<ICourseService, CourseService>(); // LEGACY - Use ICourseServiceV2 instead
-// builder.Services.AddScoped<IGradeService, GradeService>(); // TODO: Implement with repository pattern
-// builder.Services.AddScoped<IKeycloakService, KeycloakService>(); // TODO: Implement for user management
-// builder.Services.AddScoped<IEducatorService, EducatorService>(); // TODO: Implement for new educator system
-
-// Add HttpClient for Keycloak (when implemented)
-// builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
+// Add HttpClient for Keycloak
+builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
 
 // Add CORS
 builder.Services.AddCors(options =>

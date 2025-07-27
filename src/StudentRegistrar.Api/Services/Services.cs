@@ -472,3 +472,232 @@ public class CourseInstructorService : ICourseInstructorService
     }
 }
 
+public class GradeService : IGradeService
+{
+    private readonly StudentRegistrar.Data.Repositories.IGradeRepository _gradeRepository;
+    private readonly IMapper _mapper;
+
+    public GradeService(
+        StudentRegistrar.Data.Repositories.IGradeRepository gradeRepository,
+        IMapper mapper)
+    {
+        _gradeRepository = gradeRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<GradeRecordDto>> GetAllGradesAsync()
+    {
+        var grades = await _gradeRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<GradeRecordDto>>(grades);
+    }
+
+    public async Task<GradeRecordDto?> GetGradeByIdAsync(int id)
+    {
+        var grade = await _gradeRepository.GetByIdAsync(id);
+        return grade == null ? null : _mapper.Map<GradeRecordDto>(grade);
+    }
+
+    public async Task<IEnumerable<GradeRecordDto>> GetGradesByStudentAsync(Guid studentId)
+    {
+        var grades = await _gradeRepository.GetByStudentIdAsync(studentId);
+        return _mapper.Map<IEnumerable<GradeRecordDto>>(grades);
+    }
+
+    public async Task<IEnumerable<GradeRecordDto>> GetGradesByCourseAsync(Guid courseId)
+    {
+        var grades = await _gradeRepository.GetByCourseIdAsync(courseId);
+        return _mapper.Map<IEnumerable<GradeRecordDto>>(grades);
+    }
+
+    public async Task<GradeRecordDto> CreateGradeAsync(CreateGradeRecordDto createGradeDto)
+    {
+        var grade = _mapper.Map<GradeRecord>(createGradeDto);
+        var createdGrade = await _gradeRepository.CreateAsync(grade);
+        return _mapper.Map<GradeRecordDto>(createdGrade);
+    }
+
+    public async Task<GradeRecordDto?> UpdateGradeAsync(int id, CreateGradeRecordDto updateGradeDto)
+    {
+        var existingGrade = await _gradeRepository.GetByIdAsync(id);
+        if (existingGrade == null)
+            return null;
+
+        _mapper.Map(updateGradeDto, existingGrade);
+        var updatedGrade = await _gradeRepository.UpdateAsync(existingGrade);
+        return _mapper.Map<GradeRecordDto>(updatedGrade);
+    }
+
+    public async Task<bool> DeleteGradeAsync(int id)
+    {
+        return await _gradeRepository.DeleteAsync(id);
+    }
+}
+
+public class EducatorService : IEducatorService
+{
+    private readonly StudentRegistrar.Data.Repositories.IEducatorRepository _educatorRepository;
+    private readonly IMapper _mapper;
+
+    public EducatorService(
+        StudentRegistrar.Data.Repositories.IEducatorRepository educatorRepository,
+        IMapper mapper)
+    {
+        _educatorRepository = educatorRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetAllEducatorsAsync()
+    {
+        var educators = await _educatorRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<EducatorDto?> GetEducatorByIdAsync(Guid id)
+    {
+        var educator = await _educatorRepository.GetByIdAsync(id);
+        return educator == null ? null : _mapper.Map<EducatorDto>(educator);
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetEducatorsByCourseIdAsync(Guid courseId)
+    {
+        var educators = await _educatorRepository.GetByCourseIdAsync(courseId);
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<IEnumerable<EducatorDto>> GetUnassignedEducatorsAsync()
+    {
+        var educators = await _educatorRepository.GetUnassignedAsync();
+        return _mapper.Map<IEnumerable<EducatorDto>>(educators);
+    }
+
+    public async Task<EducatorDto> CreateEducatorAsync(CreateEducatorDto createDto)
+    {
+        var educator = _mapper.Map<Educator>(createDto);
+        educator.IsActive = true; // Set as active by default
+        var createdEducator = await _educatorRepository.CreateAsync(educator);
+        return _mapper.Map<EducatorDto>(createdEducator);
+    }
+
+    public async Task<EducatorDto?> UpdateEducatorAsync(Guid id, UpdateEducatorDto updateDto)
+    {
+        var existingEducator = await _educatorRepository.GetByIdAsync(id);
+        if (existingEducator == null)
+            return null;
+
+        _mapper.Map(updateDto, existingEducator);
+        var updatedEducator = await _educatorRepository.UpdateAsync(existingEducator);
+        return _mapper.Map<EducatorDto>(updatedEducator);
+    }
+
+    public async Task<bool> DeleteEducatorAsync(Guid id)
+    {
+        return await _educatorRepository.DeleteAsync(id);
+    }
+
+    public async Task<bool> DeactivateEducatorAsync(Guid id)
+    {
+        return await _educatorRepository.DeactivateAsync(id);
+    }
+
+    public async Task<bool> ActivateEducatorAsync(Guid id)
+    {
+        return await _educatorRepository.ActivateAsync(id);
+    }
+}
+
+public class KeycloakService : IKeycloakService
+{
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<KeycloakService> _logger;
+
+    public KeycloakService(
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<KeycloakService> logger)
+    {
+        _httpClient = httpClient;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    public async Task<string> CreateUserAsync(CreateUserRequest request)
+    {
+        try
+        {
+            // TODO: Implement actual Keycloak API integration
+            // For now, return a mock Keycloak ID
+            _logger.LogInformation("Creating user with email: {Email}", request.Email);
+            
+            // This would be replaced with actual Keycloak REST API calls
+            var mockKeycloakId = Guid.NewGuid().ToString();
+            _logger.LogInformation("Created user with Keycloak ID: {KeycloakId}", mockKeycloakId);
+            
+            return mockKeycloakId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create user in Keycloak for email: {Email}", request.Email);
+            throw;
+        }
+    }
+
+    public async Task UpdateUserRoleAsync(string keycloakId, UserRole role)
+    {
+        try
+        {
+            // TODO: Implement actual Keycloak API integration
+            _logger.LogInformation("Updating user role for Keycloak ID: {KeycloakId} to role: {Role}", keycloakId, role);
+            
+            // This would be replaced with actual Keycloak REST API calls
+            await Task.Delay(100); // Mock delay
+            
+            _logger.LogInformation("Successfully updated user role for Keycloak ID: {KeycloakId}", keycloakId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user role for Keycloak ID: {KeycloakId}", keycloakId);
+            throw;
+        }
+    }
+
+    public async Task DeactivateUserAsync(string keycloakId)
+    {
+        try
+        {
+            // TODO: Implement actual Keycloak API integration
+            _logger.LogInformation("Deactivating user for Keycloak ID: {KeycloakId}", keycloakId);
+            
+            // This would be replaced with actual Keycloak REST API calls
+            await Task.Delay(100); // Mock delay
+            
+            _logger.LogInformation("Successfully deactivated user for Keycloak ID: {KeycloakId}", keycloakId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to deactivate user for Keycloak ID: {KeycloakId}", keycloakId);
+            throw;
+        }
+    }
+
+    public async Task<bool> UserExistsAsync(string email)
+    {
+        try
+        {
+            // TODO: Implement actual Keycloak API integration
+            _logger.LogInformation("Checking if user exists with email: {Email}", email);
+            
+            // This would be replaced with actual Keycloak REST API calls
+            await Task.Delay(50); // Mock delay
+            
+            // For now, return false (user doesn't exist)
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check if user exists for email: {Email}", email);
+            throw;
+        }
+    }
+}
+

@@ -24,7 +24,7 @@ public class GradesController : ControllerBase
         return Ok(grades);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<GradeRecordDto>> GetGrade(int id)
     {
         var grade = await _gradeService.GetGradeByIdAsync(id);
@@ -41,7 +41,7 @@ public class GradesController : ControllerBase
         return CreatedAtAction(nameof(GetGrade), new { id = grade.Id }, grade);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     public async Task<ActionResult<GradeRecordDto>> UpdateGrade(int id, CreateGradeRecordDto updateGradeDto)
     {
         var grade = await _gradeService.UpdateGradeAsync(id, updateGradeDto);
@@ -51,7 +51,7 @@ public class GradesController : ControllerBase
         return Ok(grade);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteGrade(int id)
     {
         var result = await _gradeService.DeleteGradeAsync(id);
@@ -59,5 +59,20 @@ public class GradesController : ControllerBase
             return NotFound();
 
         return NoContent();
+    }
+
+    // Enhanced endpoints for filtering
+    [HttpGet("student/{studentId:guid}")]
+    public async Task<ActionResult<IEnumerable<GradeRecordDto>>> GetGradesByStudent(Guid studentId)
+    {
+        var grades = await _gradeService.GetGradesByStudentAsync(studentId);
+        return Ok(grades);
+    }
+
+    [HttpGet("course/{courseId:guid}")]
+    public async Task<ActionResult<IEnumerable<GradeRecordDto>>> GetGradesByCourse(Guid courseId)
+    {
+        var grades = await _gradeService.GetGradesByCourseAsync(courseId);
+        return Ok(grades);
     }
 }
