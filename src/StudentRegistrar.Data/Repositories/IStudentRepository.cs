@@ -11,5 +11,6 @@ public interface IStudentRepository
     Task<Student> UpdateAsync(Student student);
     Task<bool> DeleteAsync(Guid id);
     Task<IEnumerable<Student>> GetStudentsWithEnrollmentsAsync(Guid? semesterId = null);
+    Task<IEnumerable<Student>> GetByAccountHolderAsync(Guid accountHolderId);
     Task<bool> ExistsAsync(Guid id);
 }

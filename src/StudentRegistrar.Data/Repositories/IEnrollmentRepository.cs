@@ -5,7 +5,9 @@ namespace StudentRegistrar.Data.Repositories;
 public interface IEnrollmentRepository
 {
     Task<Enrollment?> GetByIdAsync(Guid id);
+    Task<IEnumerable<Enrollment>> GetByStudentAsync(Guid studentId);
     Task<IEnumerable<Enrollment>> GetByStudentIdAsync(Guid studentId, Guid? semesterId = null);
+    Task<IEnumerable<Enrollment>> GetByCourseAsync(Guid courseId);
     Task<IEnumerable<Enrollment>> GetByCourseIdAsync(Guid courseId);
     Task<IEnumerable<Enrollment>> GetBySemesterAsync(Guid semesterId);
     Task<IEnumerable<Enrollment>> GetAllAsync();

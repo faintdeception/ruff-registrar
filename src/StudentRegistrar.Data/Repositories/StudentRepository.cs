@@ -102,4 +102,14 @@ public class StudentRepository : IStudentRepository
     {
         return await _context.Students.AnyAsync(s => s.Id == id);
     }
+
+    public async Task<IEnumerable<Student>> GetByAccountHolderAsync(Guid accountHolderId)
+    {
+        return await _context.Students
+            .Include(s => s.AccountHolder)
+            .Where(s => s.AccountHolderId == accountHolderId)
+            .OrderBy(s => s.LastName)
+            .ThenBy(s => s.FirstName)
+            .ToListAsync();
+    }
 }

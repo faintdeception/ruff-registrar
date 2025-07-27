@@ -17,37 +17,15 @@ public class CourseInstructorRepository : ICourseInstructorRepository
         return await _context.CourseInstructors
             .Include(ci => ci.Course)
                 .ThenInclude(c => c.Semester)
-            .Include(ci => ci.Educator)
             .FirstOrDefaultAsync(ci => ci.Id == id);
-    }
-
-    public async Task<CourseInstructor?> GetByCourseAndEducatorAsync(Guid courseId, Guid educatorId)
-    {
-        return await _context.CourseInstructors
-            .Include(ci => ci.Course)
-            .Include(ci => ci.Educator)
-            .FirstOrDefaultAsync(ci => ci.CourseId == courseId && ci.EducatorId == educatorId);
-    }
-
-    public async Task<IEnumerable<CourseInstructor>> GetAllAsync()
-    {
-        return await _context.CourseInstructors
-            .Include(ci => ci.Course)
-                .ThenInclude(c => c.Semester)
-            .Include(ci => ci.Educator)
-            .OrderBy(ci => ci.Course.Semester.StartDate)
-            .ThenBy(ci => ci.Course.Code)
-            .ThenBy(ci => ci.Educator.FirstName)
-            .ToListAsync();
     }
 
     public async Task<IEnumerable<CourseInstructor>> GetByCourseIdAsync(Guid courseId)
     {
         return await _context.CourseInstructors
-            .Include(ci => ci.Educator)
             .Where(ci => ci.CourseId == courseId)
             .OrderBy(ci => ci.IsPrimary ? 0 : 1)
-            .ThenBy(ci => ci.Educator.LastName)
+            .ThenBy(ci => ci.LastName)
             .ToListAsync();
     }
 
@@ -56,10 +34,20 @@ public class CourseInstructorRepository : ICourseInstructorRepository
         return await _context.CourseInstructors
             .Include(ci => ci.Course)
                 .ThenInclude(c => c.Semester)
-            .Include(ci => ci.Educator)
-            .Where(ci => ci.Educator.Email == email)
+            .Where(ci => ci.Email == email)
             .OrderByDescending(ci => ci.Course.Semester.StartDate)
             .ThenBy(ci => ci.Course.Code)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<CourseInstructor>> GetAllAsync()
+    {
+        return await _context.CourseInstructors
+            .Include(ci => ci.Course)
+                .ThenInclude(c => c.Semester)
+            .OrderBy(ci => ci.Course.Semester.StartDate)
+            .ThenBy(ci => ci.Course.Code)
+            .ThenBy(ci => ci.FirstName)
             .ToListAsync();
     }
 
@@ -67,18 +55,11 @@ public class CourseInstructorRepository : ICourseInstructorRepository
     {
         return await _context.CourseInstructors
             .Include(ci => ci.Course)
-            .Include(ci => ci.Educator)
             .Where(ci => ci.Course.SemesterId == semesterId)
             .OrderBy(ci => ci.Course.Code)
             .ThenBy(ci => ci.IsPrimary ? 0 : 1)
-            .ThenBy(ci => ci.Educator.LastName)
+            .ThenBy(ci => ci.LastName)
             .ToListAsync();
-    }
-
-    public async Task<bool> EmailExistsAsync(string email)
-    {
-        return await _context.CourseInstructors
-            .AnyAsync(ci => ci.Educator.Email == email);
     }
 
     public async Task<CourseInstructor> CreateAsync(CourseInstructor courseInstructor)
@@ -117,5 +98,11 @@ public class CourseInstructorRepository : ICourseInstructorRepository
     public async Task<bool> ExistsAsync(Guid id)
     {
         return await _context.CourseInstructors.AnyAsync(ci => ci.Id == id);
+    }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        return await _context.CourseInstructors
+            .AnyAsync(ci => ci.Email == email);
     }
 }

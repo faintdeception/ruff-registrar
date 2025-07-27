@@ -6,11 +6,23 @@ namespace StudentRegistrar.Api.Services;
 public interface IStudentService
 {
     Task<IEnumerable<StudentDto>> GetAllStudentsAsync();
-    Task<StudentDto?> GetStudentByIdAsync(int id);
+    Task<StudentDto?> GetStudentByIdAsync(Guid id);
     Task<StudentDto> CreateStudentAsync(CreateStudentDto createStudentDto);
+    Task<StudentDto?> UpdateStudentAsync(Guid id, UpdateStudentDto updateStudentDto);
+    Task<bool> DeleteStudentAsync(Guid id);
+    Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(Guid studentId);
+    Task<IEnumerable<StudentDto>> GetStudentsByAccountHolderAsync(Guid accountHolderId);
+    
+    // Legacy support - will be deprecated
+    [Obsolete("Use GetStudentByIdAsync(Guid id) instead")]
+    Task<StudentDto?> GetStudentByIdAsync(int id);
+    [Obsolete("Use UpdateStudentAsync(Guid id, UpdateStudentDto) instead")]
     Task<StudentDto?> UpdateStudentAsync(int id, UpdateStudentDto updateStudentDto);
+    [Obsolete("Use DeleteStudentAsync(Guid id) instead")]
     Task<bool> DeleteStudentAsync(int id);
+    [Obsolete("Use GetStudentEnrollmentsAsync(Guid studentId) instead")]
     Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(int studentId);
+    [Obsolete("Use repository pattern instead")]
     Task<IEnumerable<GradeRecordDto>> GetStudentGradesAsync(int studentId);
 }
 

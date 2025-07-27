@@ -28,19 +28,39 @@ public class EnrollmentRepository : IEnrollmentRepository
     {
         var query = _context.Enrollments
             .Include(e => e.Course)
-                .ThenInclude(c => c.CourseInstructors)
-            .Include(e => e.Semester)
-            .Include(e => e.Payments)
+                .ThenInclude(c => c.Semester)
+            .Include(e => e.Student)
             .Where(e => e.StudentId == studentId);
 
         if (semesterId.HasValue)
         {
-            query = query.Where(e => e.SemesterId == semesterId.Value);
+            query = query.Where(e => e.Course.SemesterId == semesterId.Value);
         }
 
         return await query
+            .OrderByDescending(e => e.Course.Semester.StartDate)
+            .ThenBy(e => e.Course.Code)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Enrollment>> GetByStudentAsync(Guid studentId)
+    {
+        return await GetByStudentIdAsync(studentId);
+    }
+
+    public async Task<IEnumerable<Enrollment>> GetByCourseIdAsync(Guid courseId)
+    {
+        return await _context.Enrollments
+            .Include(e => e.Student)
+            .Include(e => e.Course)
+            .Where(e => e.CourseId == courseId)
             .OrderBy(e => e.EnrollmentDate)
             .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Enrollment>> GetByCourseAsync(Guid courseId)
+    {
+        return await GetByCourseIdAsync(courseId);
     }
 
     public async Task<IEnumerable<Enrollment>> GetByCourseIdAsync(Guid courseId)
