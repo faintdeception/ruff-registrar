@@ -324,8 +324,7 @@ public class CourseServiceTests : IDisposable
             Fee = 300.00m,
             AgeGroup = "High School",
             Room = "Room 201",
-            PeriodCode = "P1"
-        };
+            PeriodCode = "P1",
             Semester = "Fall"
         };
 

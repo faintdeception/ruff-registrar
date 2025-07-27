@@ -75,61 +75,6 @@ public class StudentService : IStudentService
         var students = await _studentRepository.GetByAccountHolderAsync(accountHolderId);
         return _mapper.Map<IEnumerable<StudentDto>>(students);
     }
-
-    // Legacy support methods - will be deprecated
-    [Obsolete("Use GetStudentByIdAsync(Guid id) instead")]
-    public async Task<StudentDto?> GetStudentByIdAsync(int id)
-    {
-        // This is a temporary bridge for legacy compatibility
-        // In a real migration, you'd need a mapping strategy
-        var students = await _studentRepository.GetAllAsync();
-        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
-        return student != null ? _mapper.Map<StudentDto>(student) : null;
-    }
-
-    [Obsolete("Use UpdateStudentAsync(Guid id, UpdateStudentDto) instead")]
-    public async Task<StudentDto?> UpdateStudentAsync(int id, UpdateStudentDto updateStudentDto)
-    {
-        // Legacy bridge - find by hash code
-        var students = await _studentRepository.GetAllAsync();
-        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
-        if (student == null)
-            return null;
-
-        return await UpdateStudentAsync(student.Id, updateStudentDto);
-    }
-
-    [Obsolete("Use DeleteStudentAsync(Guid id) instead")]
-    public async Task<bool> DeleteStudentAsync(int id)
-    {
-        // Legacy bridge - find by hash code
-        var students = await _studentRepository.GetAllAsync();
-        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == id);
-        if (student == null)
-            return false;
-
-        return await DeleteStudentAsync(student.Id);
-    }
-
-    [Obsolete("Use GetStudentEnrollmentsAsync(Guid studentId) instead")]
-    public async Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(int studentId)
-    {
-        // Legacy bridge - find by hash code
-        var students = await _studentRepository.GetAllAsync();
-        var student = students.FirstOrDefault(s => s.Id.GetHashCode() == studentId);
-        if (student == null)
-            return Enumerable.Empty<EnrollmentDto>();
-
-        return await GetStudentEnrollmentsAsync(student.Id);
-    }
-
-    [Obsolete("Use repository pattern instead")]
-    public async Task<IEnumerable<GradeRecordDto>> GetStudentGradesAsync(int studentId)
-    {
-        // This method should be moved to a GradeService when we implement that
-        // For now, returning empty to avoid breaking existing code
-        return Enumerable.Empty<GradeRecordDto>();
-    }
 }
 
 public class EnrollmentService : IEnrollmentService
@@ -208,40 +153,6 @@ public class EnrollmentService : IEnrollmentService
     {
         var enrollments = await _enrollmentRepository.GetBySemesterAsync(semesterId);
         return _mapper.Map<IEnumerable<EnrollmentDto>>(enrollments);
-    }
-
-    // Legacy support methods - will be deprecated
-    [Obsolete("Use GetEnrollmentByIdAsync(Guid id) instead")]
-    public async Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id)
-    {
-        // Legacy bridge - find by hash code
-        var enrollments = await _enrollmentRepository.GetAllAsync();
-        var enrollment = enrollments.FirstOrDefault(e => e.Id.GetHashCode() == id);
-        return enrollment != null ? _mapper.Map<EnrollmentDto>(enrollment) : null;
-    }
-
-    [Obsolete("Use DeleteEnrollmentAsync(Guid id) instead")]
-    public async Task<bool> DeleteEnrollmentAsync(int id)
-    {
-        // Legacy bridge - find by hash code
-        var enrollments = await _enrollmentRepository.GetAllAsync();
-        var enrollment = enrollments.FirstOrDefault(e => e.Id.GetHashCode() == id);
-        if (enrollment == null)
-            return false;
-
-        return await DeleteEnrollmentAsync(enrollment.Id);
-    }
-
-    [Obsolete("Use UpdateEnrollmentStatusAsync(Guid id, string status) instead")]
-    public async Task<EnrollmentDto?> UpdateEnrollmentStatusAsync(int id, string status)
-    {
-        // Legacy bridge - find by hash code
-        var enrollments = await _enrollmentRepository.GetAllAsync();
-        var enrollment = enrollments.FirstOrDefault(e => e.Id.GetHashCode() == id);
-        if (enrollment == null)
-            return null;
-
-        return await UpdateEnrollmentStatusAsync(enrollment.Id, status);
     }
 }
 
@@ -505,6 +416,59 @@ public class PaymentService : IPaymentService
     {
         var payments = await _paymentRepository.GetPaymentHistoryAsync(accountHolderId, fromDate, toDate);
         return _mapper.Map<IEnumerable<PaymentDto>>(payments);
+    }
+}
+
+public class CourseInstructorService : ICourseInstructorService
+{
+    private readonly ICourseInstructorRepository _courseInstructorRepository;
+    private readonly IMapper _mapper;
+
+    public CourseInstructorService(ICourseInstructorRepository courseInstructorRepository, IMapper mapper)
+    {
+        _courseInstructorRepository = courseInstructorRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<IEnumerable<CourseInstructorDto>> GetAllCourseInstructorsAsync()
+    {
+        var courseInstructors = await _courseInstructorRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<CourseInstructorDto>>(courseInstructors);
+    }
+
+    public async Task<CourseInstructorDto?> GetCourseInstructorByIdAsync(Guid id)
+    {
+        var courseInstructor = await _courseInstructorRepository.GetByIdAsync(id);
+        return courseInstructor != null ? _mapper.Map<CourseInstructorDto>(courseInstructor) : null;
+    }
+
+    public async Task<IEnumerable<CourseInstructorDto>> GetCourseInstructorsByCourseIdAsync(Guid courseId)
+    {
+        var courseInstructors = await _courseInstructorRepository.GetByCourseIdAsync(courseId);
+        return _mapper.Map<IEnumerable<CourseInstructorDto>>(courseInstructors);
+    }
+
+    public async Task<CourseInstructorDto> CreateCourseInstructorAsync(CreateCourseInstructorDto createDto)
+    {
+        var courseInstructor = _mapper.Map<CourseInstructor>(createDto);
+        var createdCourseInstructor = await _courseInstructorRepository.CreateAsync(courseInstructor);
+        return _mapper.Map<CourseInstructorDto>(createdCourseInstructor);
+    }
+
+    public async Task<CourseInstructorDto?> UpdateCourseInstructorAsync(Guid id, UpdateCourseInstructorDto updateDto)
+    {
+        var existingCourseInstructor = await _courseInstructorRepository.GetByIdAsync(id);
+        if (existingCourseInstructor == null)
+            return null;
+
+        _mapper.Map(updateDto, existingCourseInstructor);
+        var updatedCourseInstructor = await _courseInstructorRepository.UpdateAsync(existingCourseInstructor);
+        return _mapper.Map<CourseInstructorDto>(updatedCourseInstructor);
+    }
+
+    public async Task<bool> DeleteCourseInstructorAsync(Guid id)
+    {
+        return await _courseInstructorRepository.DeleteAsync(id);
     }
 }
 

@@ -12,18 +12,6 @@ public interface IStudentService
     Task<bool> DeleteStudentAsync(Guid id);
     Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(Guid studentId);
     Task<IEnumerable<StudentDto>> GetStudentsByAccountHolderAsync(Guid accountHolderId);
-    
-    // Legacy support - will be deprecated
-    [Obsolete("Use GetStudentByIdAsync(Guid id) instead")]
-    Task<StudentDto?> GetStudentByIdAsync(int id);
-    [Obsolete("Use UpdateStudentAsync(Guid id, UpdateStudentDto) instead")]
-    Task<StudentDto?> UpdateStudentAsync(int id, UpdateStudentDto updateStudentDto);
-    [Obsolete("Use DeleteStudentAsync(Guid id) instead")]
-    Task<bool> DeleteStudentAsync(int id);
-    [Obsolete("Use GetStudentEnrollmentsAsync(Guid studentId) instead")]
-    Task<IEnumerable<EnrollmentDto>> GetStudentEnrollmentsAsync(int studentId);
-    [Obsolete("Use repository pattern instead")]
-    Task<IEnumerable<GradeRecordDto>> GetStudentGradesAsync(int studentId);
 }
 
 public interface ICourseService
@@ -47,14 +35,6 @@ public interface IEnrollmentService
     Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByStudentAsync(Guid studentId);
     Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByCourseAsync(Guid courseId);
     Task<IEnumerable<EnrollmentDto>> GetEnrollmentsBySemesterAsync(Guid semesterId);
-    
-    // Legacy support - will be deprecated
-    [Obsolete("Use GetEnrollmentByIdAsync(Guid id) instead")]
-    Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id);
-    [Obsolete("Use DeleteEnrollmentAsync(Guid id) instead")]
-    Task<bool> DeleteEnrollmentAsync(int id);
-    [Obsolete("Use UpdateEnrollmentStatusAsync(Guid id, string status) instead")]
-    Task<EnrollmentDto?> UpdateEnrollmentStatusAsync(int id, string status);
 }
 
 public interface IGradeService

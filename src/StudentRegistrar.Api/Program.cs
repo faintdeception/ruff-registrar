@@ -47,17 +47,13 @@ builder.Services.AddScoped<ICourseServiceV2, CourseServiceV2>();
 builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
 builder.Services.AddScoped<ISemesterService, SemesterService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
 
-// TODO: These services need to be modernized or implemented
-// builder.Services.AddScoped<ICourseService, CourseService>();
-// builder.Services.AddScoped<IGradeService, GradeService>();
-// builder.Services.AddScoped<IKeycloakService, KeycloakService>();
-// builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
-// builder.Services.AddScoped<IEducatorService, EducatorService>();
-// builder.Services.AddScoped<IAccountHolderService, AccountHolderService>();
-// New course system services
-// builder.Services.AddScoped<ISemesterService, SemesterService>();
-// builder.Services.AddScoped<ICourseServiceV2, CourseServiceV2>();
+// TODO: Legacy services that still need modernization or removal
+// builder.Services.AddScoped<ICourseService, CourseService>(); // LEGACY - Use ICourseServiceV2 instead
+// builder.Services.AddScoped<IGradeService, GradeService>(); // TODO: Implement with repository pattern
+// builder.Services.AddScoped<IKeycloakService, KeycloakService>(); // TODO: Implement for user management
+// builder.Services.AddScoped<IEducatorService, EducatorService>(); // TODO: Implement for new educator system
 
 // Add HttpClient for Keycloak (when implemented)
 // builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
