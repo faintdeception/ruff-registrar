@@ -384,6 +384,55 @@ docker build -t student-registrar-api -f src/StudentRegistrar.Api/Dockerfile .
 docker build -t student-registrar-frontend -f frontend/Dockerfile ./frontend
 ```
 
+## Testing
+
+### End-to-End (E2E) Tests
+
+The application includes comprehensive E2E tests organized by user roles using Selenium WebDriver.
+
+#### Quick Start
+```bash
+# Run all E2E tests with browser visible
+./scripts/testing/run-e2e-tests.sh
+
+# Run tests in headless mode (CI/CD)
+./scripts/testing/run-e2e-tests.sh --headless
+
+# Setup test users and run all tests
+./scripts/testing/run-e2e-tests.sh --setup-users
+```
+
+#### Role-Based Test Suites
+```bash
+# Run only admin tests
+./scripts/testing/run-e2e-tests.sh --test-suite admin
+
+# Run only educator tests
+./scripts/testing/run-e2e-tests.sh --test-suite educator
+
+# Run only member tests
+./scripts/testing/run-e2e-tests.sh --test-suite member
+
+# Run only login tests
+./scripts/testing/run-e2e-tests.sh --test-suite login
+```
+
+#### Test Organization
+
+Tests are organized by user roles to reflect real-world usage patterns:
+
+- **AdminTests**: Full system access (students, semesters, all features)
+- **EducatorTests**: Teaching + family management (course creation, own courses, family)
+- **MemberTests**: Family management only (children, enrollments, viewing grades)
+
+#### Prerequisites for Testing
+
+1. **Application Running**: Student Registrar at `http://localhost:3001`
+2. **Test Users**: Created automatically with `--setup-users` flag
+3. **Test Data**: Seed database with `./scripts/testing/seed-database.sh`
+
+For detailed testing documentation, see [`scripts/testing/README.md`](scripts/testing/README.md).
+
 ## Contributing
 
 1. Fork the repository
