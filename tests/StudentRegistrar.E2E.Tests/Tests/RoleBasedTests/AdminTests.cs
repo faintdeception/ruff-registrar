@@ -18,8 +18,8 @@ public class AdminTests : BaseTest
 
         // Act - Login as admin
         var loginPage = new LoginPage(Driver);
-        var username = Configuration["TestCredentials:AdminUser:Username"] ?? "scoopadmin";
-        var password = Configuration["TestCredentials:AdminUser:Password"] ?? "adminpassword";
+        var username = Configuration["TestCredentials:AdminUser:Username"] ?? "admin1";
+        var password = Configuration["TestCredentials:AdminUser:Password"] ?? "AdminPass123!";
         
         loginPage.Login(username, password);
         WaitForPageLoad();
@@ -145,8 +145,8 @@ public class AdminTests : BaseTest
         Thread.Sleep(2000);
 
         var loginPage = new LoginPage(Driver);
-        var username = Configuration["TestCredentials:AdminUser:Username"] ?? "scoopadmin";
-        var password = Configuration["TestCredentials:AdminUser:Password"] ?? "adminpassword";
+        var username = Configuration["TestCredentials:AdminUser:Username"] ?? "admin1";
+        var password = Configuration["TestCredentials:AdminUser:Password"] ?? "AdminPass123!";
         
         loginPage.Login(username, password);
         WaitForPageLoad();

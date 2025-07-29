@@ -67,8 +67,8 @@ public class DiagnosticTests : BaseTest
             var usernameField = Driver.FindElement(By.Id("username"));
             var passwordField = Driver.FindElement(By.Id("password"));
             
-            usernameField.SendKeys("scoopadmin");
-            passwordField.SendKeys("K!rtfe413y");
+            usernameField.SendKeys("admin1");
+            passwordField.SendKeys("AdminPass123!");
             
             // Look for submit button
             if (IsElementPresent(By.CssSelector("button[type='submit']")))

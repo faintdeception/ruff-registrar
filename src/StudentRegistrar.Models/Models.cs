@@ -57,7 +57,7 @@ public class User
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string KeycloakId { get; set; } = string.Empty; // Links to Keycloak user
-    public UserRole Role { get; set; } = UserRole.Student;
+    public UserRole Role { get; set; } = UserRole.Member;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
@@ -68,8 +68,7 @@ public class User
 
 public enum UserRole
 {
-    Student = 0,
-    Parent = 1,
+    Member = 1,
     Educator = 2,
     Administrator = 3
 }

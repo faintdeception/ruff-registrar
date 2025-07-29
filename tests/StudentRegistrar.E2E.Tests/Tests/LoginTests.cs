@@ -60,8 +60,8 @@ public class LoginTests : BaseTest
         loginPage.IsOnLoginPage().Should().BeTrue("Should be on login page");
 
         // Get credentials from configuration
-        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
-        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "admin1";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "AdminPass123!";
 
         // Act - Login with valid credentials
         loginPage.Login(username, password);
@@ -86,8 +86,8 @@ public class LoginTests : BaseTest
         WaitForPageLoad();
         
         var loginPage = new LoginPage(Driver);
-        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
-        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "admin1";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "AdminPass123!";
         
         loginPage.Login(username, password);
         WaitForPageLoad();
@@ -123,8 +123,8 @@ public class LoginTests : BaseTest
 
         // Step 2: Login with valid credentials
         var loginPage = new LoginPage(Driver);
-        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "scoopadmin";
-        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "K!rtfe413y";
+        var username = Configuration["TestCredentials:ValidUser:Username"] ?? "admin1";
+        var password = Configuration["TestCredentials:ValidUser:Password"] ?? "AdminPass123!";
         
         loginPage.Login(username, password);
         WaitForPageLoad();

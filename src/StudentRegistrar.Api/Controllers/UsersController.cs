@@ -276,7 +276,7 @@ public class UsersController : ControllerBase
                 Email = email,
                 FirstName = firstName,
                 LastName = lastName,
-                Role = UserRole.Student, // Default role
+                Role = GetCurrentUserRole(), // Use role from Keycloak token
                 IsActive = true
             };
 
@@ -342,10 +342,10 @@ public class UsersController : ControllerBase
             return UserRole.Administrator;
         if (roles.Contains("Educator"))
             return UserRole.Educator;
-        if (roles.Contains("Parent"))
-            return UserRole.Parent;
+        if (roles.Contains("Member"))
+            return UserRole.Member;
         
-        return UserRole.Student;
+        return UserRole.Member;
     }
 
     private IEnumerable<string> GetCurrentUserRoles()
