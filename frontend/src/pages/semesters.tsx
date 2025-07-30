@@ -321,7 +321,11 @@ export default function SemestersPage() {
                 <CalendarIcon className="h-8 w-8 text-primary-600" />
                 <h1 className="ml-3 text-2xl font-bold text-gray-900">Semester Management</h1>
               </div>
-              <button onClick={openCreateModal} className="btn btn-primary">
+              <button 
+                id="create-semester-btn"
+                onClick={openCreateModal} 
+                className="btn btn-primary"
+              >
                 <PlusIcon className="h-5 w-5" />
                 Create Semester
               </button>
@@ -344,7 +348,11 @@ export default function SemestersPage() {
               <p className="text-gray-600 mb-6">
                 Create your first semester to start organizing courses.
               </p>
-              <button onClick={openCreateModal} className="btn btn-primary">
+              <button 
+                id="create-first-semester-btn"
+                onClick={openCreateModal} 
+                className="btn btn-primary"
+              >
                 <PlusIcon className="h-5 w-5" />
                 Create First Semester
               </button>
@@ -354,7 +362,12 @@ export default function SemestersPage() {
               {semesters.map((semester) => {
                 const status = getSemesterStatus(semester);
                 return (
-                  <div key={semester.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                  <div 
+                    key={semester.id} 
+                    id={`semester-card-${semester.id}`}
+                    data-testid={`semester-${semester.name.replace(/\s+/g, '-').toLowerCase()}`}
+                    className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+                  >
                     <div className="p-6">
                       {/* Header */}
                       <div className="flex items-start justify-between mb-4">
@@ -376,12 +389,14 @@ export default function SemestersPage() {
                         </div>
                         <div className="flex space-x-2 ml-4">
                           <button
+                            id={`edit-semester-${semester.id}`}
                             onClick={() => openEditModal(semester)}
                             className="text-gray-400 hover:text-gray-600"
                           >
                             <PencilIcon className="h-5 w-5" />
                           </button>
                           <button
+                            id={`delete-semester-${semester.id}`}
                             onClick={() => handleDelete(semester.id, semester.name)}
                             className="text-gray-400 hover:text-red-600"
                           >
@@ -433,10 +448,10 @@ export default function SemestersPage() {
 
         {/* Create/Edit Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div id="semester-modal" className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
               <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                <h3 id="modal-title" className="text-lg font-medium text-gray-900 mb-4">
                   {editingSemester ? 'Edit Semester' : 'Create New Semester'}
                 </h3>
                 
@@ -447,6 +462,7 @@ export default function SemestersPage() {
                         Semester Name *
                       </label>
                       <input
+                        id="semester-name-input"
                         type="text"
                         required
                         value={formData.name}
@@ -461,6 +477,7 @@ export default function SemestersPage() {
                         Semester Code
                       </label>
                       <input
+                        id="semester-code-input"
                         type="text"
                         value={formData.code}
                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
@@ -476,6 +493,7 @@ export default function SemestersPage() {
                         Start Date *
                       </label>
                       <input
+                        id="semester-start-date-input"
                         type="date"
                         required
                         value={formData.startDate}
@@ -489,6 +507,7 @@ export default function SemestersPage() {
                         End Date *
                       </label>
                       <input
+                        id="semester-end-date-input"
                         type="date"
                         required
                         value={formData.endDate}
@@ -504,6 +523,7 @@ export default function SemestersPage() {
                         Registration Start *
                       </label>
                       <input
+                        id="semester-reg-start-date-input"
                         type="date"
                         required
                         value={formData.registrationStartDate}
@@ -517,6 +537,7 @@ export default function SemestersPage() {
                         Registration End *
                       </label>
                       <input
+                        id="semester-reg-end-date-input"
                         type="date"
                         required
                         value={formData.registrationEndDate}
@@ -529,6 +550,7 @@ export default function SemestersPage() {
                   <div>
                     <label className="flex items-center">
                       <input
+                        id="semester-is-active-checkbox"
                         type="checkbox"
                         checked={formData.isActive}
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
@@ -544,13 +566,14 @@ export default function SemestersPage() {
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <div id="error-message" className="bg-red-50 border border-red-200 rounded-md p-3">
                       <p className="text-red-600 text-sm">{error}</p>
                     </div>
                   )}
 
                   <div className="flex justify-end space-x-3 pt-4">
                     <button
+                      id="cancel-semester-btn"
                       type="button"
                       onClick={closeModal}
                       disabled={submitting}
@@ -559,6 +582,7 @@ export default function SemestersPage() {
                       Cancel
                     </button>
                     <button
+                      id="save-semester-btn"
                       type="submit"
                       disabled={submitting}
                       className="btn btn-primary"

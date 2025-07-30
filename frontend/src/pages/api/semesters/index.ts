@@ -24,12 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fetchOptions.body = JSON.stringify(req.body);
     }
 
-    // For HTTPS with self-signed certificates, we need to configure Node.js to accept them
-    // This is only for development - in production you should use proper SSL certificates
-    if (API_BASE_URL.startsWith('https://')) {
-      process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-    }
-
     // Forward the request to the actual backend API
     const response = await fetch(`${API_BASE_URL}/api/semesters`, fetchOptions);
 

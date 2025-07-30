@@ -37,6 +37,6 @@ var frontend = builder.AddNpmApp("frontend", "../../frontend", "dev")
     .WithExternalHttpEndpoints();
 
 // Configure the frontend to use the API
-frontend.WithEnvironment("NEXT_PUBLIC_API_URL", apiService.GetEndpoint("https"));
+frontend.WithEnvironment("NEXT_PUBLIC_API_URL", apiService.GetEndpoint("http"));
 
 await builder.Build().RunAsync();
