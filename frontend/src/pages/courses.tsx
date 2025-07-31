@@ -38,9 +38,34 @@ interface Course {
   periodCode: string;
   ageGroup: string;
   instructorNames?: string[]; // Made optional since courses can be created without instructors
+  instructors?: CourseInstructor[]; // Full instructor objects with IDs
   semesterName: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface CourseInstructor {
+  id: string;
+  courseId: string;
+  accountHolderId?: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  isPrimary: boolean;
+  accountHolder?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    emailAddress: string;
+  };
+}
+
+interface AccountHolder {
+  id: string;
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
 }
 
 export default function CoursesPage() {
@@ -52,6 +77,9 @@ export default function CoursesPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeSemester, setActiveSemester] = useState<Semester | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [availableMembers, setAvailableMembers] = useState<AccountHolder[]>([]);
   const [isCreating, setIsCreating] = useState(false);
 
   const isAdmin = user?.roles.includes('Administrator');
@@ -152,6 +180,37 @@ export default function CoursesPage() {
     }
   };
 
+  const fetchAvailableMembers = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/courses/available-members', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch available members');
+      }
+
+      const members = await response.json();
+      setAvailableMembers(members);
+    } catch (err) {
+      console.error('Error fetching available members:', err);
+    }
+  };
+
+  const openEditModal = async (course: Course) => {
+    setEditingCourse(course);
+    setShowEditModal(true);
+    await fetchAvailableMembers();
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -233,6 +292,327 @@ export default function CoursesPage() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  // Course Edit Modal Component
+  const CourseEditModal = () => {
+    const [courseInstructors, setCourseInstructors] = useState<CourseInstructor[]>([]);
+    const [loadingInstructors, setLoadingInstructors] = useState(false);
+    const [addingInstructor, setAddingInstructor] = useState(false);
+    const [newInstructor, setNewInstructor] = useState({
+      accountHolderId: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      isPrimary: false
+    });
+
+    // Fetch course instructors when modal opens
+    useEffect(() => {
+      if (showEditModal && editingCourse) {
+        fetchCourseInstructors();
+      }
+    }, [showEditModal, editingCourse]);
+
+    const fetchCourseInstructors = async () => {
+      if (!editingCourse) return;
+      
+      try {
+        setLoadingInstructors(true);
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/courses/${editingCourse.id}/instructors`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const instructors = await response.json();
+          setCourseInstructors(instructors);
+        }
+      } catch (err) {
+        console.error('Error fetching course instructors:', err);
+      } finally {
+        setLoadingInstructors(false);
+      }
+    };
+
+    const addInstructor = async () => {
+      if (!editingCourse) return;
+      
+      try {
+        setAddingInstructor(true);
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const instructorData: any = {
+          courseId: editingCourse.id,
+          accountHolderId: newInstructor.accountHolderId || null,
+          firstName: newInstructor.firstName,
+          lastName: newInstructor.lastName,
+          email: newInstructor.email || null,
+          phone: newInstructor.phone || null,
+          isPrimary: newInstructor.isPrimary
+        };
+
+        // If member is selected, get their info
+        if (newInstructor.accountHolderId) {
+          const member = availableMembers.find(m => m.id === newInstructor.accountHolderId);
+          if (member) {
+            instructorData.firstName = member.firstName;
+            instructorData.lastName = member.lastName;
+            instructorData.email = member.emailAddress;
+          }
+        }
+
+        const response = await fetch(`/api/courses/${editingCourse.id}/instructors`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(instructorData)
+        });
+
+        if (response.ok) {
+          await fetchCourseInstructors();
+          setNewInstructor({
+            accountHolderId: '',
+            firstName: '',
+            lastName: '',
+            email: '',
+            phone: '',
+            isPrimary: false
+          });
+        }
+      } catch (err) {
+        console.error('Error adding instructor:', err);
+      } finally {
+        setAddingInstructor(false);
+      }
+    };
+
+    const removeInstructor = async (instructorId: string) => {
+      if (!editingCourse) return;
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/courses/${editingCourse.id}/instructors/${instructorId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          await fetchCourseInstructors();
+        }
+      } catch (err) {
+        console.error('Error removing instructor:', err);
+      }
+    };
+
+    const handleMemberSelect = (accountHolderId: string) => {
+      const member = availableMembers.find(m => m.id === accountHolderId);
+      if (member) {
+        setNewInstructor(prev => ({
+          ...prev,
+          accountHolderId,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.emailAddress
+        }));
+      } else {
+        setNewInstructor(prev => ({
+          ...prev,
+          accountHolderId: '',
+          firstName: '',
+          lastName: '',
+          email: ''
+        }));
+      }
+    };
+
+    if (!showEditModal || !editingCourse) return null;
+
+    return (
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              Edit Course: {editingCourse.name}
+            </h3>
+            <button
+              onClick={() => setShowEditModal(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <span className="sr-only">Close</span>
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* Course Instructors Section */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Course Instructors</h4>
+              
+              {loadingInstructors ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-4">
+                  {courseInstructors.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No instructors assigned to this course.</p>
+                  ) : (
+                    courseInstructors.map((instructor) => (
+                      <div key={instructor.id} className="flex items-center justify-between p-3 border rounded-md">
+                        <div>
+                          <p className="font-medium">
+                            {instructor.firstName} {instructor.lastName}
+                            {instructor.isPrimary && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                Primary
+                              </span>
+                            )}
+                            {instructor.accountHolder && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Co-op Member
+                              </span>
+                            )}
+                          </p>
+                          {instructor.email && (
+                            <p className="text-sm text-gray-600">{instructor.email}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => removeInstructor(instructor.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Add Instructor Form */}
+              <div className="border-t pt-4">
+                <h5 className="text-sm font-medium text-gray-900 mb-3">Add Instructor</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Select Co-op Member (Optional)
+                    </label>
+                    <select
+                      value={newInstructor.accountHolderId}
+                      onChange={(e) => handleMemberSelect(e.target.value)}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="">Select a member or add external instructor...</option>
+                      {availableMembers.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.firstName} {member.lastName} ({member.emailAddress})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Primary Instructor
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={newInstructor.isPrimary}
+                      onChange={(e) => setNewInstructor(prev => ({ ...prev, isPrimary: e.target.checked }))}
+                      className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newInstructor.firstName}
+                      onChange={(e) => setNewInstructor(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                      disabled={!!newInstructor.accountHolderId}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newInstructor.lastName}
+                      onChange={(e) => setNewInstructor(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                      disabled={!!newInstructor.accountHolderId}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newInstructor.email}
+                      onChange={(e) => setNewInstructor(prev => ({ ...prev, email: e.target.value }))}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                      disabled={!!newInstructor.accountHolderId}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={newInstructor.phone}
+                      onChange={(e) => setNewInstructor(prev => ({ ...prev, phone: e.target.value }))}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={addInstructor}
+                    disabled={addingInstructor || (!newInstructor.firstName || !newInstructor.lastName)}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingInstructor ? 'Adding...' : 'Add Instructor'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Course Creation Modal Component
@@ -696,7 +1076,10 @@ export default function CoursesPage() {
                         View Details
                       </button>
                       {isAdmin && (
-                        <button className="btn btn-secondary text-sm py-2 px-3">
+                        <button 
+                          onClick={() => openEditModal(course)}
+                          className="btn btn-secondary text-sm py-2 px-3"
+                        >
                           Edit
                         </button>
                       )}
@@ -709,6 +1092,9 @@ export default function CoursesPage() {
 
         {/* Course Creation Modal */}
         <CourseCreateModal />
+
+        {/* Course Edit Modal */}
+        <CourseEditModal />
       </main>
     </ProtectedRoute>
   );

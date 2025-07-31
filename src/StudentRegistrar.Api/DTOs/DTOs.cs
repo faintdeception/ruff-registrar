@@ -317,6 +317,7 @@ public class CourseInstructorDto
 {
     public Guid Id { get; set; }
     public Guid CourseId { get; set; }
+    public Guid? AccountHolderId { get; set; }  // New field for member instructors
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
@@ -327,12 +328,16 @@ public class CourseInstructorDto
     public DateTime UpdatedAt { get; set; }
     public InstructorInfo InstructorInfo { get; set; } = new();
     public CourseDto? Course { get; set; }
+    public AccountHolderDto? AccountHolder { get; set; }  // Navigation property for member instructors
 }
 
 public class CreateCourseInstructorDto
 {
     [Required]
     public Guid CourseId { get; set; }
+    
+    // Optional: Link to existing member
+    public Guid? AccountHolderId { get; set; }
     
     [Required]
     [StringLength(100)]

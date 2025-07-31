@@ -139,15 +139,17 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
             .ForMember(dest => dest.User, opt => opt.Ignore());
 
-                // CourseInstructor mappings
+        // CourseInstructor mappings
         CreateMap<CourseInstructor, CourseInstructorDto>()
             .ForMember(dest => dest.InstructorInfo, opt => opt.MapFrom(src => src.GetInstructorInfo()))
-            .ForMember(dest => dest.Course, opt => opt.Ignore()); // Prevent circular reference
+            .ForMember(dest => dest.Course, opt => opt.Ignore()) // Prevent circular reference
+            .ForMember(dest => dest.AccountHolder, opt => opt.MapFrom(src => src.AccountHolder));
         CreateMap<CreateCourseInstructorDto, CourseInstructor>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Course, opt => opt.Ignore())
+            .ForMember(dest => dest.AccountHolder, opt => opt.Ignore())
             .AfterMap((src, dest) => {
                 if (src.InstructorInfo != null)
                 {

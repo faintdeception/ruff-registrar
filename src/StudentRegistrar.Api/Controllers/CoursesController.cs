@@ -108,4 +108,55 @@ public class CoursesController : ControllerBase
 
         return await DeleteCourse(course.Id);
     }
+
+    // Instructor Management Endpoints
+    [HttpGet("{courseId:guid}/instructors")]
+    public async Task<ActionResult<IEnumerable<CourseInstructorDto>>> GetCourseInstructors(Guid courseId)
+    {
+        var instructors = await _courseService.GetCourseInstructorsAsync(courseId);
+        return Ok(instructors);
+    }
+
+    [HttpPost("{courseId:guid}/instructors")]
+    public async Task<ActionResult<CourseInstructorDto>> AddInstructor(Guid courseId, CreateCourseInstructorDto createInstructorDto)
+    {
+        if (createInstructorDto.CourseId != courseId)
+        {
+            createInstructorDto.CourseId = courseId; // Ensure consistency
+        }
+
+        var instructor = await _courseService.AddInstructorAsync(createInstructorDto);
+        return CreatedAtAction(nameof(GetCourseInstructors), new { courseId }, instructor);
+    }
+
+    [HttpPut("{courseId:guid}/instructors/{instructorId:guid}")]
+    public async Task<ActionResult<CourseInstructorDto>> UpdateInstructor(
+        Guid courseId, 
+        Guid instructorId, 
+        UpdateCourseInstructorDto updateInstructorDto)
+    {
+        var instructor = await _courseService.UpdateInstructorAsync(instructorId, updateInstructorDto);
+        if (instructor == null)
+            return NotFound();
+
+        return Ok(instructor);
+    }
+
+    [HttpDelete("{courseId:guid}/instructors/{instructorId:guid}")]
+    public async Task<IActionResult> RemoveInstructor(Guid courseId, Guid instructorId)
+    {
+        var result = await _courseService.RemoveInstructorAsync(instructorId);
+        if (!result)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    // Endpoint to get available members who can be instructors
+    [HttpGet("available-members")]
+    public async Task<ActionResult<IEnumerable<AccountHolderDto>>> GetAvailableMembers()
+    {
+        var members = await _courseService.GetAvailableMembersAsync();
+        return Ok(members);
+    }
 }

@@ -11,6 +11,9 @@ public class CourseInstructor
     [Required]
     public Guid CourseId { get; set; }
     
+    // Optional link to AccountHolder (for co-op members who are teaching)
+    public Guid? AccountHolderId { get; set; }
+    
     [Required]
     [MaxLength(100)]
     public string FirstName { get; set; } = string.Empty;
@@ -38,6 +41,7 @@ public class CourseInstructor
     
     // Navigation Properties
     public virtual Course Course { get; set; } = null!;
+    public virtual AccountHolder? AccountHolder { get; set; }
     
     // Computed Properties
     [NotMapped]

@@ -159,11 +159,19 @@ public class EnrollmentService : IEnrollmentService
 public class CourseServiceV2 : ICourseServiceV2
 {
     private readonly ICourseRepository _courseRepository;
+    private readonly ICourseInstructorRepository _courseInstructorRepository;
+    private readonly IAccountHolderRepository _accountHolderRepository;
     private readonly IMapper _mapper;
 
-    public CourseServiceV2(ICourseRepository courseRepository, IMapper mapper)
+    public CourseServiceV2(
+        ICourseRepository courseRepository, 
+        ICourseInstructorRepository courseInstructorRepository,
+        IAccountHolderRepository accountHolderRepository,
+        IMapper mapper)
     {
         _courseRepository = courseRepository;
+        _courseInstructorRepository = courseInstructorRepository;
+        _accountHolderRepository = accountHolderRepository;
         _mapper = mapper;
     }
 
@@ -206,6 +214,55 @@ public class CourseServiceV2 : ICourseServiceV2
     public async Task<bool> DeleteCourseAsync(Guid id)
     {
         return await _courseRepository.DeleteAsync(id);
+    }
+
+    // Instructor management methods
+    public async Task<IEnumerable<CourseInstructorDto>> GetCourseInstructorsAsync(Guid courseId)
+    {
+        var instructors = await _courseInstructorRepository.GetByCourseIdAsync(courseId);
+        return _mapper.Map<IEnumerable<CourseInstructorDto>>(instructors);
+    }
+
+    public async Task<CourseInstructorDto> AddInstructorAsync(CreateCourseInstructorDto createDto)
+    {
+        var instructor = _mapper.Map<CourseInstructor>(createDto);
+        
+        // If AccountHolderId is provided, populate name and email from the account holder
+        if (createDto.AccountHolderId.HasValue)
+        {
+            var accountHolder = await _accountHolderRepository.GetByIdAsync(createDto.AccountHolderId.Value);
+            if (accountHolder != null)
+            {
+                instructor.FirstName = accountHolder.FirstName;
+                instructor.LastName = accountHolder.LastName;
+                instructor.Email = accountHolder.EmailAddress;
+            }
+        }
+
+        var createdInstructor = await _courseInstructorRepository.CreateAsync(instructor);
+        return _mapper.Map<CourseInstructorDto>(createdInstructor);
+    }
+
+    public async Task<CourseInstructorDto?> UpdateInstructorAsync(Guid instructorId, UpdateCourseInstructorDto updateDto)
+    {
+        var existingInstructor = await _courseInstructorRepository.GetByIdAsync(instructorId);
+        if (existingInstructor == null)
+            return null;
+
+        _mapper.Map(updateDto, existingInstructor);
+        var updatedInstructor = await _courseInstructorRepository.UpdateAsync(existingInstructor);
+        return _mapper.Map<CourseInstructorDto>(updatedInstructor);
+    }
+
+    public async Task<bool> RemoveInstructorAsync(Guid instructorId)
+    {
+        return await _courseInstructorRepository.DeleteAsync(instructorId);
+    }
+
+    public async Task<IEnumerable<AccountHolderDto>> GetAvailableMembersAsync()
+    {
+        var accountHolders = await _accountHolderRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<AccountHolderDto>>(accountHolders);
     }
 }
 

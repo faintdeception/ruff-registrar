@@ -63,6 +63,7 @@ public class AccountHolder
     // Navigation Properties
     public virtual ICollection<Student> Students { get; set; } = new List<Student>();
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public virtual ICollection<CourseInstructor> CourseInstructors { get; set; } = new List<CourseInstructor>();
     
     // Computed Properties
     [NotMapped]
