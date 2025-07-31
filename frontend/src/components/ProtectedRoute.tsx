@@ -1,13 +1,15 @@
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import Layout from './Layout';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   roles?: string[];
+  showLayout?: boolean;
 }
 
-export default function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, roles, showLayout = true }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -45,5 +47,11 @@ export default function ProtectedRoute({ children, roles }: ProtectedRouteProps)
     }
   }
 
-  return <>{children}</>;
+  // For pages that shouldn't show layout (like login), return children directly
+  if (!showLayout) {
+    return <>{children}</>;
+  }
+
+  // For protected pages, wrap in layout
+  return <Layout>{children}</Layout>;
 }

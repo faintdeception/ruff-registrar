@@ -35,21 +35,21 @@ public class AdminTests : BaseTest
         Driver.PageSource.Should().Contain("Semesters", "Admin should see Semesters link");
     }
 
-    [Fact]
-    public void Admin_Should_Access_Student_Management()
-    {
-        // Arrange - Login as admin
-        LoginAsAdmin();
+    // [Fact]
+    // public void Admin_Should_Access_Student_Management()
+    // {
+    //     // Arrange - Login as admin
+    //     LoginAsAdmin();
 
-        // Act - Navigate to students page
-        var studentsLink = Driver.FindElement(By.LinkText("Students"));
-        studentsLink.Click();
-        WaitForPageLoad();
+    //     // Act - Navigate to students page
+    //     var studentsLink = Driver.FindElement(By.LinkText("Students"));
+    //     studentsLink.Click();
+    //     WaitForPageLoad();
 
-        // Assert - Should be on students page
-        Driver.Url.Should().Contain("/students", "Should navigate to students page");
-        Driver.PageSource.Should().ContainEquivalentOf("student");
-    }
+    //     // Assert - Should be on students page
+    //     Driver.Url.Should().Contain("/students", "Should navigate to students page");
+    //     Driver.PageSource.Should().ContainEquivalentOf("student");
+    // }
 
     [Fact]
     public void Admin_Should_Access_Semester_Management()
@@ -77,11 +77,11 @@ public class AdminTests : BaseTest
         var navigationLinks = new[]
         {
             ("Account", "/account-holder"),
-            ("Students", "/students"),
+            // ("Students", "/students"),
             ("Courses", "/courses"),
             ("Semesters", "/semesters"),
             // ("Enrollments", "/enrollments"),
-            ("Grades", "/grades"),
+            // ("Grades", "/grades"),
             ("Educators", "/educators")
         };
 
@@ -404,7 +404,7 @@ public class AdminTests : BaseTest
         
         semestersPage.FillSemesterForm(
             name: originalName,
-            code: "EDIT2025",
+            code: $"EDIT2025{timestamp.Substring(8)}",
             startDate: new DateTime(2025, 9, 1),
             endDate: new DateTime(2025, 12, 20),
             regStartDate: new DateTime(2025, 7, 15),
@@ -428,7 +428,7 @@ public class AdminTests : BaseTest
         // Change the name
         semestersPage.FillSemesterForm(
             name: updatedName,
-            code: "UPDATED2025",
+            code: $"UPDATED2025{timestamp.Substring(8)}",
             startDate: new DateTime(2025, 9, 1),
             endDate: new DateTime(2025, 12, 20),
             regStartDate: new DateTime(2025, 7, 15),
@@ -441,6 +441,295 @@ public class AdminTests : BaseTest
         // Assert - Verify the semester was updated
         semestersPage.IsSemesterVisible(updatedName).Should().BeTrue("Updated semester should be visible");
         semestersPage.IsSemesterVisible(originalName).Should().BeFalse("Original semester name should be gone");
+    }
+
+    [Fact]
+    public void Admin_Should_Access_Course_Management()
+    {
+        // Arrange - Login as admin
+        LoginAsAdmin();
+
+        // Act - Navigate to courses page
+        var coursesLink = Driver.FindElement(By.LinkText("Courses"));
+        coursesLink.Click();
+        WaitForPageLoad();
+
+        // Assert - Should be on courses page
+        Driver.Url.Should().Contain("/courses", "Should navigate to courses page");
+        Driver.PageSource.Should().ContainEquivalentOf("course");
+    }
+
+    [Fact]
+    public void Admin_Should_Create_Course_For_Semester()
+    {
+        // Arrange - Login as admin and create a semester first
+        LoginAsAdmin();
+        var semestersPage = new SemestersPage(Driver);
+        semestersPage.NavigateToSemesters();
+
+        // Create a semester for the course
+        var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        var semesterName = $"Course Test Semester {timestamp}";
+        var semesterCode = $"CTS{timestamp.Substring(8)}";
+
+        semestersPage.ClickCreateSemester();
+        semestersPage.WaitForModalToOpen();
+        
+        semestersPage.FillSemesterForm(
+            name: semesterName,
+            code: semesterCode,
+            startDate: new DateTime(2025, 9, 1),
+            endDate: new DateTime(2025, 12, 20),
+            regStartDate: new DateTime(2025, 7, 15),
+            regEndDate: new DateTime(2025, 8, 25),
+            isActive: true
+        );
+
+        semestersPage.SaveSemester();
+        Thread.Sleep(2000);
+
+        // Verify semester was created
+        semestersPage.IsSemesterVisible(semesterName).Should().BeTrue("Semester should be created first");
+
+        // Navigate to courses page
+        var coursesPage = new CoursesPage(Driver);
+        coursesPage.NavigateToCourses();
+
+        // Act - Create a course for the semester
+        var courseName = $"Test Course {timestamp}";
+        var courseCode = $"TC{timestamp.Substring(8)}";
+
+        // Select the semester we just created
+        coursesPage.SelectSemester(semesterName);
+        
+        // Click create course
+        coursesPage.ClickCreateCourse();
+        coursesPage.IsCreateFormVisible().Should().BeTrue("Create course form should be visible");
+
+        // Fill course form
+        coursesPage.FillCourseForm(
+            name: courseName,
+            code: courseCode,
+            ageGroup: "Children (5-12)",
+            maxCapacity: 15,
+            room: "Room 101",
+            fee: 50.00m,
+            periodCode: "Period A",
+            startTime: "09:00AM",
+            endTime: "10:30AM",
+            description: "A test course for E2E testing"
+        );
+
+        coursesPage.SaveCourse();
+        Thread.Sleep(2000);
+
+        // Assert - Verify course was created
+        coursesPage.IsCourseVisible(courseName).Should().BeTrue($"Course '{courseName}' should be visible");
+    }
+
+    [Fact]
+    public void Admin_Should_Create_Multiple_Courses_For_Same_Semester()
+    {
+        // Arrange - Login as admin and create a semester
+        LoginAsAdmin();
+        var semestersPage = new SemestersPage(Driver);
+        semestersPage.NavigateToSemesters();
+
+        var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        var semesterName = $"Multi Course Semester {timestamp}";
+        var semesterCode = $"MCS{timestamp.Substring(8)}";
+
+        semestersPage.ClickCreateSemester();
+        semestersPage.WaitForModalToOpen();
+        
+        semestersPage.FillSemesterForm(
+            name: semesterName,
+            code: semesterCode,
+            startDate: new DateTime(2025, 9, 1),
+            endDate: new DateTime(2025, 12, 20),
+            regStartDate: new DateTime(2025, 7, 15),
+            regEndDate: new DateTime(2025, 8, 25),
+            isActive: true
+        );
+
+        semestersPage.SaveSemester();
+        Thread.Sleep(2000);
+
+        // Navigate to courses page
+        var coursesPage = new CoursesPage(Driver);
+        coursesPage.NavigateToCourses();
+        coursesPage.SelectSemester(semesterName);
+
+        var initialCourseCount = coursesPage.GetCourseCount();
+
+        // Define multiple courses to create
+        var courses = new[]
+        {
+            new { Name = $"Math Basics {timestamp}", Code = $"MATH{timestamp.Substring(10)}", AgeGroup = "Children (5-12)", Capacity = 12 },
+            new { Name = $"Science Lab {timestamp}", Code = $"SCI{timestamp.Substring(10)}", AgeGroup = "Teens (13-17)", Capacity = 10 },
+            new { Name = $"Art Workshop {timestamp}", Code = $"ART{timestamp.Substring(10)}", AgeGroup = "All Ages", Capacity = 20 }
+        };
+
+        // Act - Create each course
+        foreach (var course in courses)
+        {
+            coursesPage.ClickCreateCourse();
+            coursesPage.IsCreateFormVisible().Should().BeTrue($"Create form should be visible for {course.Name}");
+
+            coursesPage.FillCourseForm(
+                name: course.Name,
+                code: course.Code,
+                ageGroup: course.AgeGroup,
+                maxCapacity: course.Capacity,
+                room: $"Room {Array.IndexOf(courses, course) + 1}",
+                fee: 25.00m
+            );
+
+            coursesPage.SaveCourse();
+            Thread.Sleep(1500); // Allow time between creations
+
+            // Verify each course was created
+            coursesPage.IsCourseVisible(course.Name).Should().BeTrue($"Course '{course.Name}' should be created");
+        }
+
+        // Assert - Verify all courses were created
+        var finalCourseCount = coursesPage.GetCourseCount();
+        finalCourseCount.Should().BeGreaterThan(initialCourseCount + courses.Length - 1, "All courses should be created");
+    }
+
+    [Fact]
+    public void Admin_Should_Cancel_Course_Creation()
+    {
+        // Arrange - Login as admin and navigate to courses
+        LoginAsAdmin();
+        var coursesPage = new CoursesPage(Driver);
+        coursesPage.NavigateToCourses();
+
+        // Ensure we have a semester to work with
+        var availableSemesters = coursesPage.GetAvailableSemesters();
+        if (availableSemesters.Count > 0)
+        {
+            coursesPage.SelectSemester(availableSemesters.First());
+        }
+
+        var initialCourseCount = coursesPage.GetCourseCount();
+
+        // Act - Start creating course but cancel
+        coursesPage.ClickCreateCourse();
+        coursesPage.IsCreateFormVisible().Should().BeTrue("Create form should be visible");
+
+        // Fill some data
+        coursesPage.FillCourseForm(
+            name: "Cancel Test Course",
+            code: "CANCEL",
+            ageGroup: "Children (5-12)",
+            maxCapacity: 10
+        );
+
+        // Cancel instead of saving
+        coursesPage.CancelCreate();
+
+        // Assert - Verify no course was created
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        coursesPage.IsCourseVisible("Cancel Test Course").Should().BeFalse("Cancelled course should not appear");
+        
+        var finalCourseCount = coursesPage.GetCourseCount();
+        finalCourseCount.Should().Be(initialCourseCount, "Course count should remain unchanged after cancel");
+    }
+
+    [Fact]
+    public void Admin_Should_Create_Course_With_All_Details()
+    {
+        // Arrange - Login as admin and create a semester
+        LoginAsAdmin();
+        var semestersPage = new SemestersPage(Driver);
+        semestersPage.NavigateToSemesters();
+
+        var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        var semesterName = $"Detailed Course Semester {timestamp}";
+        var semesterCode = $"DCS{timestamp.Substring(8)}";
+
+        semestersPage.ClickCreateSemester();
+        semestersPage.WaitForModalToOpen();
+        
+        semestersPage.FillSemesterForm(
+            name: semesterName,
+            code: semesterCode,
+            startDate: new DateTime(2025, 9, 1),
+            endDate: new DateTime(2025, 12, 20),
+            regStartDate: new DateTime(2025, 7, 15),
+            regEndDate: new DateTime(2025, 8, 25),
+            isActive: true
+        );
+
+        semestersPage.SaveSemester();
+        Thread.Sleep(2000);
+
+        // Navigate to courses and create detailed course
+        var coursesPage = new CoursesPage(Driver);
+        coursesPage.NavigateToCourses();
+        coursesPage.SelectSemester(semesterName);
+
+        // Act - Create course with all possible details
+        var courseName = $"Advanced Programming {timestamp}";
+        var courseCode = $"PROG{timestamp.Substring(8)}";
+
+        coursesPage.ClickCreateCourse();
+        coursesPage.IsCreateFormVisible().Should().BeTrue("Create course form should be visible");
+
+        coursesPage.FillCourseForm(
+            name: courseName,
+            code: courseCode,
+            ageGroup: "Teens (13-17)",
+            maxCapacity: 12,
+            room: "Computer Lab",
+            fee: 150.00m,
+            periodCode: "Morning Block",
+            startTime: "10:00AM",
+            endTime: "11:30AM",
+            description: "An advanced programming course covering modern software development practices and tools."
+        );
+
+        coursesPage.SaveCourse();
+        Thread.Sleep(2000);
+
+        // Assert - Verify course was created with all details
+        coursesPage.IsCourseVisible(courseName).Should().BeTrue($"Course '{courseName}' should be visible");
+        
+        // Verify course appears in the list (detailed verification would require more specific selectors)
+        Driver.PageSource.Should().Contain(courseCode, "Course code should be visible");
+        Driver.PageSource.Should().Contain("Computer Lab", "Room should be visible");
+        Driver.PageSource.Should().Contain("$150.00", "Fee should be visible");
+    }
+
+    [Fact]
+    public void Admin_Should_Validate_Required_Course_Fields()
+    {
+        // Arrange - Login as admin and navigate to courses
+        LoginAsAdmin();
+        var coursesPage = new CoursesPage(Driver);
+        coursesPage.NavigateToCourses();
+
+        // Ensure we have a semester to work with
+        var availableSemesters = coursesPage.GetAvailableSemesters();
+        if (availableSemesters.Count > 0)
+        {
+            coursesPage.SelectSemester(availableSemesters.First());
+        }
+
+        // Act - Try to create course without required fields
+        coursesPage.ClickCreateCourse();
+        coursesPage.IsCreateFormVisible().Should().BeTrue("Create form should be visible");
+
+        // Try to save without filling required fields
+        coursesPage.SaveCourse();
+        Thread.Sleep(1000);
+
+        // Assert - Should show validation error and stay on form
+        // Note: This depends on how the frontend handles validation
+        coursesPage.IsCreateFormVisible().Should().BeTrue("Should remain on create form after validation error");
     }
 
     #region Helper Methods

@@ -135,43 +135,42 @@ export default function EnrollmentsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading enrollments...</p>
           </div>
-        </div>
+        </main>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ClipboardDocumentListIcon className="h-8 w-8 text-primary-600" />
-                <h1 className="ml-3 text-2xl font-bold text-gray-900">Enrollments</h1>
-              </div>
-              <div className="flex space-x-3">
-                {isAdmin && (
-                  <Link href="/students" className="btn btn-secondary">
-                    <UserGroupIcon className="h-5 w-5" />
-                    Students
-                  </Link>
-                )}
-                <Link href="/courses" className="btn btn-secondary">
-                  <BookOpenIcon className="h-5 w-5" />
-                  Courses
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <ClipboardDocumentListIcon className="h-8 w-8 text-primary-600" />
+              <h1 className="ml-3 text-2xl font-bold text-gray-900">Enrollments</h1>
+            </div>
+            <div className="flex space-x-3">
+              {isAdmin && (
+                <Link href="/students" className="btn btn-secondary">
+                  <UserGroupIcon className="h-5 w-5" />
+                  Students
                 </Link>
-              </div>
+              )}
+              <Link href="/courses" className="btn btn-secondary">
+                <BookOpenIcon className="h-5 w-5" />
+                Courses
+              </Link>
+            </div>
             </div>
           </div>
-        </div>
 
+        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
@@ -287,7 +286,7 @@ export default function EnrollmentsPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </ProtectedRoute>
   );
 }

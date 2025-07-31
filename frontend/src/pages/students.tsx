@@ -100,13 +100,13 @@ export default function StudentsPage() {
   if (!isAdmin) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <XCircleIcon className="h-12 w-12 text-red-600 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
             <p className="text-gray-600">You need administrator privileges to access this page.</p>
           </div>
-        </div>
+        </main>
       </ProtectedRoute>
     );
   }
@@ -114,42 +114,38 @@ export default function StudentsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading students...</p>
           </div>
-        </div>
+        </main>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <UserGroupIcon className="h-8 w-8 text-primary-600" />
-                <h1 className="ml-3 text-2xl font-bold text-gray-900">Students</h1>
-              </div>
-              <div className="flex space-x-3">
-                <Link href="/account-holder" className="btn btn-secondary">
-                  <AcademicCapIcon className="h-5 w-5" />
-                  Account Management
-                </Link>
-                <Link href="/courses" className="btn btn-secondary">
-                  <BookOpenIcon className="h-5 w-5" />
-                  Browse Courses
-                </Link>
-              </div>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <UserGroupIcon className="h-8 w-8 text-primary-600" />
+              <h1 className="ml-3 text-2xl font-bold text-gray-900">Students</h1>
+            </div>
+            <div className="flex space-x-3">
+              <Link href="/account-holder" className="btn btn-secondary">
+                <AcademicCapIcon className="h-5 w-5" />
+                Account Management
+              </Link>
+              <Link href="/courses" className="btn btn-secondary">
+                <BookOpenIcon className="h-5 w-5" />
+                Browse Courses
+              </Link>
             </div>
           </div>
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
               <p className="text-red-600">{error}</p>
@@ -277,8 +273,7 @@ export default function StudentsPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+      </main>
     </ProtectedRoute>
   );
 }

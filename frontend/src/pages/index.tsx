@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalCourses: 0,
@@ -34,72 +34,8 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div className="flex items-center">
-                <AcademicCapIcon className="h-8 w-8 text-primary-600" />
-                <h1 className="ml-2 text-2xl font-bold text-gray-900">
-                  Student Registrar
-                </h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <nav className="flex space-x-4">
-                  <Link href="/account-holder" className="text-gray-600 hover:text-primary-600">
-                    Account
-                  </Link>
-                  {user?.roles.includes('Administrator') && (
-                    <Link href="/students" className="text-gray-600 hover:text-primary-600">
-                      Students
-                    </Link>
-                  )}
-                  <Link href="/courses" className="text-gray-600 hover:text-primary-600">
-                    Courses
-                  </Link>
-                  {user?.roles.includes('Administrator') && (
-                    <Link href="/semesters" className="text-gray-600 hover:text-primary-600">
-                      Semesters
-                    </Link>
-                  )}
-                  <Link href="/enrollments" className="text-gray-600 hover:text-primary-600">
-                    Enrollments
-                  </Link>
-                  <Link href="/grades" className="text-gray-600 hover:text-primary-600">
-                    Grades
-                  </Link>
-                  <Link href="/educators" className="text-gray-600 hover:text-primary-600">
-                    Educators
-                  </Link>
-                </nav>
-                
-                {/* User Menu */}
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <UserCircleIcon className="h-6 w-6 text-gray-400" />
-                    <span className="text-sm text-gray-700">
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({user?.roles.join(', ')})
-                    </span>
-                  </div>
-                  <button id="logout-button"
-                    onClick={logout}
-                    className="flex items-center space-x-1 text-gray-600 hover:text-red-600"
-                  >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -205,7 +141,6 @@ export default function Home() {
           </Link>
         </div>
       </main>
-    </div>
     </ProtectedRoute>
   );
 }

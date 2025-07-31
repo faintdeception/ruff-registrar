@@ -171,66 +171,62 @@ export default function GradesPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading grades...</p>
           </div>
-        </div>
+        </main>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ChartBarIcon className="h-8 w-8 text-primary-600" />
-                <h1 className="ml-3 text-2xl font-bold text-gray-900">Grades</h1>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <ChartBarIcon className="h-8 w-8 text-primary-600" />
+              <h1 className="ml-3 text-2xl font-bold text-gray-900">Grades</h1>
+            </div>
+            <div className="flex space-x-3">
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => setViewMode('summary')}
+                  className={`px-4 py-2 text-sm font-medium border ${
+                    viewMode === 'summary'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  } rounded-l-md`}
+                >
+                  Summary
+                </button>
+                <button
+                  onClick={() => setViewMode('detailed')}
+                  className={`px-4 py-2 text-sm font-medium border ${
+                    viewMode === 'detailed'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  } rounded-r-md border-l-0`}
+                >
+                  Detailed
+                </button>
               </div>
-              <div className="flex space-x-3">
-                <div className="flex rounded-md shadow-sm">
-                  <button
-                    onClick={() => setViewMode('summary')}
-                    className={`px-4 py-2 text-sm font-medium border ${
-                      viewMode === 'summary'
-                        ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } rounded-l-md`}
-                  >
-                    Summary
-                  </button>
-                  <button
-                    onClick={() => setViewMode('detailed')}
-                    className={`px-4 py-2 text-sm font-medium border ${
-                      viewMode === 'detailed'
-                        ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } rounded-r-md border-l-0`}
-                  >
-                    Detailed
-                  </button>
-                </div>
-                {isAdmin && (
-                  <Link href="/students" className="btn btn-secondary">
-                    <UserGroupIcon className="h-5 w-5" />
-                    Students
-                  </Link>
-                )}
-                <Link href="/courses" className="btn btn-secondary">
-                  <BookOpenIcon className="h-5 w-5" />
-                  Courses
+              {isAdmin && (
+                <Link href="/students" className="btn btn-secondary">
+                  <UserGroupIcon className="h-5 w-5" />
+                  Students
                 </Link>
-              </div>
+              )}
+              <Link href="/courses" className="btn btn-secondary">
+                <BookOpenIcon className="h-5 w-5" />
+                Courses
+              </Link>
             </div>
           </div>
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
               <p className="text-red-600">{error}</p>
@@ -400,8 +396,7 @@ export default function GradesPage() {
               )}
             </div>
           )}
-        </div>
-      </div>
+      </main>
     </ProtectedRoute>
   );
 }

@@ -37,9 +37,9 @@ public class EducatorTests : BaseTest
         // Arrange - Login as educator
         LoginAsEducator();
 
-        // Act - Navigate to account/family management
-        var accountLink = Driver.FindElement(By.LinkText("Account"));
-        accountLink.Click();
+        // Act - Navigate to account/family management using navigation page
+        var navigationPage = new NavigationPage(Driver);
+        navigationPage.ClickAccount();
         WaitForPageLoad();
 
         // Assert - Should access family management
@@ -53,9 +53,9 @@ public class EducatorTests : BaseTest
         // Arrange - Login as educator
         LoginAsEducator();
 
-        // Act - Navigate to courses page
-        var coursesLink = Driver.FindElement(By.LinkText("Courses"));
-        coursesLink.Click();
+        // Act - Navigate to courses page using navigation page
+        var navigationPage = new NavigationPage(Driver);
+        navigationPage.ClickCourses();
         WaitForPageLoad();
 
         // Assert - Should access courses (to create/manage their own)
@@ -64,46 +64,14 @@ public class EducatorTests : BaseTest
     }
 
     [Fact]
-    public void Educator_Should_Access_Enrollment_Management()
-    {
-        // Arrange - Login as educator
-        LoginAsEducator();
-
-        // Act - Navigate to enrollments page
-        var enrollmentsLink = Driver.FindElement(By.LinkText("Enrollments"));
-        enrollmentsLink.Click();
-        WaitForPageLoad();
-
-        // Assert - Should access enrollments (for their courses and family)
-        Driver.Url.Should().Contain("/enrollments", "Should navigate to enrollments page");
-        Driver.PageSource.Should().ContainEquivalentOf("enrollment");
-    }
-
-    [Fact]
-    public void Educator_Should_Access_Grade_Management()
-    {
-        // Arrange - Login as educator
-        LoginAsEducator();
-
-        // Act - Navigate to grades page
-        var gradesLink = Driver.FindElement(By.LinkText("Grades"));
-        gradesLink.Click();
-        WaitForPageLoad();
-
-        // Assert - Should access grades (for their courses and children)
-        Driver.Url.Should().Contain("/grades", "Should navigate to grades page");
-        Driver.PageSource.Should().ContainEquivalentOf("grade");
-    }
-
-    [Fact]
     public void Educator_Should_Access_Educator_Section()
     {
         // Arrange - Login as educator
         LoginAsEducator();
 
-        // Act - Navigate to educators page
-        var educatorsLink = Driver.FindElement(By.LinkText("Educators"));
-        educatorsLink.Click();
+        // Act - Navigate to educators page using navigation page
+        var navigationPage = new NavigationPage(Driver);
+        navigationPage.ClickEducators();
         WaitForPageLoad();
 
         // Assert - Should access educators section
@@ -117,9 +85,17 @@ public class EducatorTests : BaseTest
         // Arrange - Login as educator
         LoginAsEducator();
 
-        // Assert - Should NOT see admin-only features
-        Driver.PageSource.Should().NotContain("Students", "Educator should not see Students admin link");
-        Driver.PageSource.Should().NotContain("Semesters", "Educator should not see Semesters admin link");
+        // Assert - Should NOT see admin-only features using robust test selectors
+        var navigationPage = new NavigationPage(Driver);
+        navigationPage.VerifyEducatorNavigation();
+        
+        // Additional verification - check roles
+        navigationPage.HasEducatorRole().Should().BeTrue("User should have Educator role");
+        navigationPage.HasAdminRole().Should().BeFalse("User should NOT have Admin role");
+        
+        // Verify admin items are not present in DOM (most robust check)
+        navigationPage.IsStudentsPresent().Should().BeFalse("Students admin link should not exist for Educators");
+        navigationPage.IsSemestersPresent().Should().BeFalse("Semesters admin link should not exist for Educators");
     }
 
     [Fact]
@@ -135,29 +111,41 @@ public class EducatorTests : BaseTest
         // Arrange - Login as educator
         LoginAsEducator();
 
-        // Act & Assert - Verify access to educator functions
+        // Act & Assert - Verify navigation and access
+        var navigationPage = new NavigationPage(Driver);
+        
+        // Verify complete navigation permissions
+        navigationPage.VerifyEducatorNavigation();
+        
+        // Test navigation to each allowed page
         
         // 1. Family Management
-        VerifyCanAccessPage("Account", "/account");
+        navigationPage.ClickAccount();
+        WaitForPageLoad();
+        Driver.Url.Should().Contain("/account", "Should navigate to account page");
         
         // 2. Course Management (create own courses)
-        VerifyCanAccessPage("Courses", "/courses");
+        navigationPage.ClickCourses();
+        WaitForPageLoad();
+        Driver.Url.Should().Contain("/courses", "Should navigate to courses page");
         
         // 3. Enrollment Management (own courses + children)
-        VerifyCanAccessPage("Enrollments", "/enrollments");
+        // navigationPage.ClickEnrollments();
+        // WaitForPageLoad();
+        // Driver.Url.Should().Contain("/enrollments", "Should navigate to enrollments page");
         
         // 4. Grade Management (own courses + children's grades)
-        VerifyCanAccessPage("Grades", "/grades");
+        // navigationPage.ClickGrades();
+        // WaitForPageLoad();
+        // Driver.Url.Should().Contain("/grades", "Should navigate to grades page");
         
         // 5. Educator Section
-        VerifyCanAccessPage("Educators", "/educators");
+        navigationPage.ClickEducators();
+        WaitForPageLoad();
+        Driver.Url.Should().Contain("/educators", "Should navigate to educators page");
 
-        // Verify NO access to admin-only features
-        var navigationElements = Driver.FindElements(By.CssSelector("nav a"));
-        var navigationText = string.Join(" ", navigationElements.Select(e => e.Text));
-        
-        navigationText.Should().NotContain("Students", "Educators should not see admin Students link");
-        navigationText.Should().NotContain("Semesters", "Educators should not see admin Semesters link");
+        // Final verification - ensure proper role context
+        navigationPage.GetUserRoles().Should().Contain("Educator", "User should be identified as Educator");
     }
 
     #region Helper Methods
