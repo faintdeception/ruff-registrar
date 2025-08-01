@@ -102,11 +102,14 @@ execute_sql "INSERT INTO \"Users\" (\"Id\", \"Email\", \"FirstName\", \"LastName
 
 echo "👥 Creating AccountHolders..."
 
-# Create AccountHolders (test families)
+# Create AccountHolders (both test families and test users from Keycloak)
 execute_sql "INSERT INTO \"AccountHolders\" (\"Id\", \"FirstName\", \"LastName\", \"EmailAddress\", \"HomePhone\", \"MobilePhone\", \"AddressJson\", \"EmergencyContactJson\", \"MembershipDuesOwed\", \"MembershipDuesReceived\", \"KeycloakUserId\", \"MemberSince\", \"LastEdit\", \"CreatedAt\", \"UpdatedAt\") VALUES
 (gen_random_uuid(), 'John', 'Smith', 'scoopmember@example.com', '555-0101', '555-0102', '{\"street\": \"123 Main St\", \"city\": \"Anytown\", \"state\": \"CA\", \"postalCode\": \"12345\", \"country\": \"US\"}', '{\"firstName\": \"Jane\", \"lastName\": \"Smith\", \"homePhone\": \"555-0103\", \"mobilePhone\": \"555-0104\", \"email\": \"jane.smith@example.com\"}', 100.00, 75.00, 'scoopmember-keycloak-id', '2024-01-15', NOW(), NOW(), NOW()),
 (gen_random_uuid(), 'Sarah', 'Johnson', 'sarah.johnson@example.com', '555-0201', '555-0202', '{\"street\": \"456 Oak Ave\", \"city\": \"Somewhere\", \"state\": \"CA\", \"postalCode\": \"12346\", \"country\": \"US\"}', '{\"firstName\": \"Mike\", \"lastName\": \"Johnson\", \"homePhone\": \"555-0203\", \"mobilePhone\": \"555-0204\", \"email\": \"mike.johnson@example.com\"}', 150.00, 150.00, 'sarah-keycloak-id', '2023-09-10', NOW(), NOW(), NOW()),
-(gen_random_uuid(), 'Michael', 'Brown', 'michael.brown@example.com', '555-0301', '555-0302', '{\"street\": \"789 Pine Rd\", \"city\": \"Elsewhere\", \"state\": \"CA\", \"postalCode\": \"12347\", \"country\": \"US\"}', '{\"firstName\": \"Lisa\", \"lastName\": \"Brown\", \"homePhone\": \"555-0303\", \"mobilePhone\": \"555-0304\", \"email\": \"lisa.brown@example.com\"}', 200.00, 100.00, 'michael-keycloak-id', '2024-03-20', NOW(), NOW(), NOW());"
+(gen_random_uuid(), 'Michael', 'Brown', 'michael.brown@example.com', '555-0301', '555-0302', '{\"street\": \"789 Pine Rd\", \"city\": \"Elsewhere\", \"state\": \"CA\", \"postalCode\": \"12347\", \"country\": \"US\"}', '{\"firstName\": \"Lisa\", \"lastName\": \"Brown\", \"homePhone\": \"555-0303\", \"mobilePhone\": \"555-0304\", \"email\": \"lisa.brown@example.com\"}', 200.00, 100.00, 'michael-keycloak-id', '2024-03-20', NOW(), NOW(), NOW()),
+(gen_random_uuid(), 'Admin', 'Test', 'admin.test@example.com', '555-1101', '555-1102', '{\"street\": \"100 Admin St\", \"city\": \"AdminTown\", \"state\": \"CA\", \"postalCode\": \"12348\", \"country\": \"US\"}', '{\"firstName\": \"Test\", \"lastName\": \"Admin\", \"homePhone\": \"555-1103\", \"mobilePhone\": \"555-1104\", \"email\": \"test.admin@example.com\"}', 0.00, 0.00, 'admin1-keycloak-id', NOW(), NOW(), NOW(), NOW()),
+(gen_random_uuid(), 'Emily', 'Educator', 'emily.educator@example.com', '555-1201', '555-1202', '{\"street\": \"200 Educator Ave\", \"city\": \"TeacherTown\", \"state\": \"CA\", \"postalCode\": \"12349\", \"country\": \"US\"}', '{\"firstName\": \"Education\", \"lastName\": \"Contact\", \"homePhone\": \"555-1203\", \"mobilePhone\": \"555-1204\", \"email\": \"education.contact@example.com\"}', 0.00, 0.00, 'educator1-keycloak-id', NOW(), NOW(), NOW(), NOW()),
+(gen_random_uuid(), 'Mark', 'Member', 'mark.member@example.com', '555-1301', '555-1302', '{\"street\": \"300 Member Rd\", \"city\": \"MemberVille\", \"state\": \"CA\", \"postalCode\": \"12350\", \"country\": \"US\"}', '{\"firstName\": \"Member\", \"lastName\": \"Contact\", \"homePhone\": \"555-1303\", \"mobilePhone\": \"555-1304\", \"email\": \"member.contact@example.com\"}', 50.00, 25.00, 'member1-keycloak-id', NOW(), NOW(), NOW(), NOW());"
 
 echo "📅 Creating Semesters..."
 
@@ -250,7 +253,7 @@ echo ""
 echo "📊 Summary of created data:"
 echo "=========================="
 echo "• 4 Users (1 system admin, 3 test users)"
-echo "• 3 AccountHolders (families)"
+echo "• 6 AccountHolders (3 test families + 3 test users from Keycloak)"
 echo "• 2 Semesters (Fall 2025, Spring 2026)"
 echo "• 5 Students across the families"
 echo "• 5 Rooms (Art Room A, Science Lab, Classroom B, Math Room, Auditorium)"
