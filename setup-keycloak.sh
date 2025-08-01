@@ -127,7 +127,7 @@ curl -s -X POST "${KEYCLOAK_URL}/admin/realms" \
 
 # Create roles
 echo "👥 Creating user roles..."
-ROLES=("Administrator" "Educator" "Parent" "Student")
+ROLES=("Administrator" "Educator" "Member")
 
 for role in "${ROLES[@]}"; do
     echo "   Creating role: $role"
@@ -183,7 +183,7 @@ if [ "$CLIENT_UUID" != "null" ] && [ -n "$CLIENT_UUID" ]; then
     
     # Create scoopadmin user if not exists
     SCOOPADMIN_USERNAME="scoopadmin"
-    SCOOPADMIN_PASSWORD="K!rtfe413y"
+    SCOOPADMIN_PASSWORD="changethis123!"
 
     # Check if user exists
     USER_EXISTS=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${SCOOPADMIN_USERNAME}" \

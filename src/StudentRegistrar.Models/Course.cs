@@ -20,8 +20,8 @@ public class Course
     
     public string? Description { get; set; }
     
-    [MaxLength(50)]
-    public string? Room { get; set; }
+    // Room relationship - replaces old string Room field
+    public Guid? RoomId { get; set; }
     
     [Required]
     public int MaxCapacity { get; set; }
@@ -49,6 +49,7 @@ public class Course
     
     // Navigation Properties
     public virtual Semester Semester { get; set; } = null!;
+    public virtual Room? Room { get; set; }
     public virtual ICollection<CourseInstructor> CourseInstructors { get; set; } = new List<CourseInstructor>();
     public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     

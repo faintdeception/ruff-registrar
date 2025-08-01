@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -31,7 +31,13 @@ interface Course {
   name: string;
   code: string;
   description: string;
-  room: string;
+  roomId?: string;
+  room?: {
+    id: string;
+    name: string;
+    capacity: number;
+    roomType: number;
+  };
   maxCapacity: number;
   currentEnrollment: number;
   fee: number;
@@ -40,6 +46,16 @@ interface Course {
   instructorNames?: string[]; // Made optional since courses can be created without instructors
   instructors?: CourseInstructor[]; // Full instructor objects with IDs
   semesterName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Room {
+  id: string;
+  name: string;
+  capacity: number;
+  notes?: string;
+  roomType: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,6 +96,8 @@ export default function CoursesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [availableMembers, setAvailableMembers] = useState<AccountHolder[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [roomError, setRoomError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const isAdmin = user?.roles.includes('Administrator');
@@ -180,7 +198,7 @@ export default function CoursesPage() {
     }
   };
 
-  const fetchAvailableMembers = async () => {
+  const fetchAvailableMembers = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -203,13 +221,55 @@ export default function CoursesPage() {
     } catch (err) {
       console.error('Error fetching available members:', err);
     }
-  };
+  }, []);
 
-  const openEditModal = async (course: Course) => {
+  const fetchAvailableRooms = useCallback(async (minCapacity: number = 0) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const url = minCapacity > 0 
+        ? `/api/courses/available-rooms?minCapacity=${minCapacity}`
+        : '/api/courses/available-rooms';
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to fetch available rooms';
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage += ': ' + errorData.message;
+          }
+        } catch {
+          errorMessage += ` (HTTP ${response.status})`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const rooms = await response.json();
+      setAvailableRooms(rooms);
+      // Only clear error if there was one - avoid unnecessary state updates
+      setRoomError(prevError => prevError ? null : prevError);
+    } catch (err) {
+      console.error('Error fetching available rooms:', err);
+      setRoomError(err instanceof Error ? err.message : 'Failed to fetch available rooms');
+    }
+  }, []);
+
+  const openEditModal = useCallback(async (course: Course) => {
     setEditingCourse(course);
     setShowEditModal(true);
     await fetchAvailableMembers();
-  };
+    await fetchAvailableRooms(course.maxCapacity);
+  }, [fetchAvailableMembers, fetchAvailableRooms]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -230,7 +290,7 @@ export default function CoursesPage() {
     name: string;
     code?: string;
     description?: string;
-    room?: string;
+    roomId?: string;
     maxCapacity: number;
     fee: number;
     periodCode?: string;
@@ -256,7 +316,7 @@ export default function CoursesPage() {
         name: courseData.name,
         code: courseData.code || null,
         description: courseData.description || null,
-        room: courseData.room || null,
+        roomId: courseData.roomId || null,
         maxCapacity: courseData.maxCapacity,
         fee: courseData.fee,
         periodCode: courseData.periodCode || null,
@@ -439,6 +499,52 @@ export default function CoursesPage() {
       }
     };
 
+    const handleRoomChange = async (roomId: string) => {
+      if (!editingCourse || !roomId) return;
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const updateDto = {
+          name: editingCourse.name,
+          code: editingCourse.code,
+          description: editingCourse.description,
+          roomId: roomId,
+          maxCapacity: editingCourse.maxCapacity,
+          fee: editingCourse.fee,
+          periodCode: editingCourse.periodCode,
+          startTime: null, // You might want to handle time properly here
+          endTime: null,
+          ageGroup: editingCourse.ageGroup
+        };
+
+        const response = await fetch(`/api/courses/${editingCourse.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateDto)
+        });
+
+        if (response.ok) {
+          // Refresh the courses list to show updated room
+          if (selectedSemester) {
+            fetchCoursesBySemester(selectedSemester);
+          } else if (activeSemester) {
+            fetchCoursesBySemester(activeSemester.id);
+          }
+          
+          // Update the editing course object
+          const updatedCourse = await response.json();
+          setEditingCourse(updatedCourse);
+        }
+      } catch (err) {
+        console.error('Error updating course room:', err);
+      }
+    };
+
     if (!showEditModal || !editingCourse) return null;
 
     return (
@@ -601,6 +707,59 @@ export default function CoursesPage() {
               </div>
             </div>
 
+            {/* Room Assignment Section */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Room Assignment</h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Room
+                  </label>
+                  {editingCourse?.room ? (
+                    <div className="p-3 bg-gray-50 rounded-md">
+                      <p className="font-medium">{editingCourse.room.name}</p>
+                      <p className="text-sm text-gray-600">
+                        Capacity: {editingCourse.room.capacity} | Course Max: {editingCourse.maxCapacity}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No room currently assigned</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign New Room
+                  </label>
+                  <select
+                    onChange={(e) => handleRoomChange(e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                    defaultValue=""
+                  >
+                    <option value="">Select a room...</option>
+                    {availableRooms
+                      .filter(room => room.capacity >= editingCourse?.maxCapacity)
+                      .map(room => (
+                        <option key={room.id} value={room.id}>
+                          {room.name} (Capacity: {room.capacity})
+                        </option>
+                      ))}
+                  </select>
+                  {roomError && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {roomError}
+                    </p>
+                  )}
+                  {editingCourse && !roomError && availableRooms.filter(room => room.capacity >= editingCourse.maxCapacity).length === 0 && (
+                    <p className="mt-1 text-sm text-amber-600">
+                      No rooms available with capacity ≥ {editingCourse.maxCapacity}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-3 pt-4 border-t">
               <button
                 onClick={() => setShowEditModal(false)}
@@ -621,7 +780,7 @@ export default function CoursesPage() {
       name: '',
       code: '',
       description: '',
-      room: '',
+      roomId: '',
       maxCapacity: 20,
       fee: 0,
       periodCode: '',
@@ -629,6 +788,13 @@ export default function CoursesPage() {
       endTime: '',
       ageGroup: ''
     });
+
+    // Effect to fetch rooms when modal opens and when capacity changes
+    // useEffect(() => {
+    //   if (showCreateModal) {
+    //     fetchAvailableRooms(formData.maxCapacity);
+    //   }
+    // }, [showCreateModal, formData.maxCapacity]);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -732,18 +898,35 @@ export default function CoursesPage() {
               </div>
 
               <div>
-                <label htmlFor="room" className="block text-sm font-medium text-gray-700">
-                  Room
+                <label htmlFor="roomId" className="block text-sm font-medium text-gray-700">
+                  Room (Optional)
                 </label>
-                <input
-                  type="text"
-                  id="room"
-                  name="room"
-                  value={formData.room}
+                <select
+                  id="roomId"
+                  name="roomId"
+                  value={formData.roomId}
                   onChange={handleChange}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="e.g., Room 101"
-                />
+                >
+                  <option value="">Select a room...</option>
+                  {availableRooms
+                    .filter(room => room.capacity >= formData.maxCapacity)
+                    .map(room => (
+                      <option key={room.id} value={room.id}>
+                        {room.name} (Capacity: {room.capacity})
+                      </option>
+                    ))}
+                </select>
+                {roomError && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {roomError}
+                  </p>
+                )}
+                {formData.maxCapacity > 0 && !roomError && availableRooms.filter(room => room.capacity >= formData.maxCapacity).length === 0 && (
+                  <p className="mt-1 text-sm text-amber-600">
+                    No rooms available with capacity ≥ {formData.maxCapacity}. Consider reducing max capacity or leave room unassigned.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1004,7 +1187,7 @@ export default function CoursesPage() {
                       {course.room && (
                         <div className="flex items-center text-sm text-gray-600">
                           <MapPinIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                          <span>{course.room}</span>
+                          <span>{course.room.name} (Capacity: {course.room.capacity})</span>
                         </div>
                       )}
                       

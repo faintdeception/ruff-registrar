@@ -106,6 +106,9 @@ public interface ICourseServiceV2
     Task<CourseInstructorDto?> UpdateInstructorAsync(Guid instructorId, UpdateCourseInstructorDto updateDto);
     Task<bool> RemoveInstructorAsync(Guid instructorId);
     Task<IEnumerable<AccountHolderDto>> GetAvailableMembersAsync();
+    
+    // Room management methods
+    Task<IEnumerable<RoomDto>> GetAvailableRoomsAsync(int minCapacity = 0);
 }
 
 public interface IAccountHolderService
@@ -132,4 +135,16 @@ public interface IPaymentService
     Task<decimal> GetTotalPaidByAccountHolderAsync(Guid accountHolderId, PaymentType? type = null);
     Task<decimal> GetTotalPaidByEnrollmentAsync(Guid enrollmentId);
     Task<IEnumerable<PaymentDto>> GetPaymentHistoryAsync(Guid accountHolderId, DateTime? fromDate = null, DateTime? toDate = null);
+}
+
+public interface IRoomService
+{
+    Task<IEnumerable<RoomDto>> GetAllRoomsAsync();
+    Task<RoomDto?> GetRoomByIdAsync(Guid id);
+    Task<IEnumerable<RoomDto>> GetRoomsByTypeAsync(RoomType roomType);
+    Task<IEnumerable<RoomDto>> GetAvailableRoomsAsync(int minCapacity);
+    Task<RoomDto> CreateRoomAsync(CreateRoomDto createDto);
+    Task<RoomDto?> UpdateRoomAsync(Guid id, UpdateRoomDto updateDto);
+    Task<bool> DeleteRoomAsync(Guid id);
+    Task<bool> IsRoomInUseAsync(Guid roomId);
 }

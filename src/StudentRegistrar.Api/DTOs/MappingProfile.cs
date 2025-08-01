@@ -52,6 +52,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsFull, opt => opt.MapFrom(src => src.IsFull))
             .ForMember(dest => dest.Instructors, opt => opt.MapFrom(src => src.CourseInstructors))
             .ForMember(dest => dest.InstructorNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.FullName).ToList()))
+            .ForMember(dest => dest.Room, opt => opt.MapFrom(src => src.Room))
             .ForMember(dest => dest.Semester, opt => opt.Ignore()); // Ignore to prevent circular reference
         
         CreateMap<CreateCourseDto, Course>()
@@ -363,5 +364,19 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CourseConfigJson, opt => opt.Ignore());
+
+        // Room mappings
+        CreateMap<Room, RoomDto>()
+            .ForMember(dest => dest.CourseCount, opt => opt.MapFrom(src => src.Courses.Count));
+        CreateMap<CreateRoomDto, Room>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Courses, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+        CreateMap<UpdateRoomDto, Room>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.Courses, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
     }
 }

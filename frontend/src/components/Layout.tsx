@@ -67,6 +67,17 @@ export default function Layout({ children }: LayoutProps) {
                     Semesters
                   </Link>
                 )}
+                {user?.roles.includes('Administrator') && (
+                  <Link 
+                    href="/rooms" 
+                    className="text-gray-600 hover:text-primary-600"
+                    data-testid="nav-rooms"
+                    data-nav-item="rooms"
+                    data-admin-only="true"
+                  >
+                    Rooms
+                  </Link>
+                )}
                 <Link 
                   href="/enrollments" 
                   className="text-gray-600 hover:text-primary-600"

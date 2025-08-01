@@ -80,6 +80,7 @@ public class AdminTests : BaseTest
             // ("Students", "/students"),
             ("Courses", "/courses"),
             ("Semesters", "/semesters"),
+            ("Rooms", "/rooms"),
             // ("Enrollments", "/enrollments"),
             // ("Grades", "/grades"),
             ("Educators", "/educators")
@@ -766,6 +767,238 @@ public class AdminTests : BaseTest
         // Verify navigation
         Driver.Url.Should().Contain(expectedUrlPart, $"Admin should access {linkText} page");
     }
+
+    #region Room Management Tests
+
+    [Fact]
+    public void Admin_Should_Access_Room_Management()
+    {
+        // Arrange
+        LoginAsAdmin();
+
+        // Act - Navigate to rooms page
+        var roomsLink = Driver.FindElement(By.CssSelector("[data-nav-item='rooms']"));
+        roomsLink.Click();
+        WaitForPageLoad();
+
+        // Assert - Should be on rooms page
+        Driver.Url.Should().Contain("/rooms", "Should navigate to rooms page");
+        Driver.PageSource.Should().Contain("Room Management", "Should see room management header");
+    }
+
+    [Fact]
+    public void Admin_Should_See_Create_Room_Button()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        // Act & Assert - Should see create button
+        var createButton = Driver.FindElement(By.Id("create-room-btn"));
+        createButton.Should().NotBeNull("Create room button should be visible");
+        createButton.Text.Should().Contain("Create Room");
+    }
+
+    [Fact]
+    public void Admin_Should_Create_New_Room_Successfully()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        var uniqueName = $"Test Room {DateTime.Now:yyyyMMddHHmmss}";
+
+        // Act - Create a new room
+        var createButton = Driver.FindElement(By.Id("create-room-btn"));
+        createButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        // Fill in room details
+        var nameInput = Driver.FindElement(By.Id("room-name-input"));
+        nameInput.SendKeys(uniqueName);
+
+        var typeSelect = Driver.FindElement(By.Id("room-type-select"));
+        typeSelect.SendKeys("Lab");
+
+        var capacityInput = Driver.FindElement(By.Id("room-capacity-input"));
+        capacityInput.Clear();
+        capacityInput.SendKeys("25");
+
+        var notesInput = Driver.FindElement(By.Id("room-notes-input"));
+        notesInput.SendKeys("E2E test room for lab activities");
+
+        // Submit the form
+        var saveButton = Driver.FindElement(By.Id("save-room-btn"));
+        saveButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        // Assert - Room should be created and visible
+        Driver.PageSource.Should().Contain(uniqueName, "New room should appear on the page");
+        Driver.PageSource.Should().Contain("Lab", "Room type should be displayed");
+        Driver.PageSource.Should().Contain("25", "Room capacity should be displayed");
+    }
+
+    [Fact]
+    public void Admin_Should_Be_Able_To_Cancel_Room_Creation()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        // Act - Open create modal and cancel
+        var createButton = Driver.FindElement(By.Id("create-room-btn"));
+        createButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        // Fill in partial data
+        var nameInput = Driver.FindElement(By.Id("room-name-input"));
+        nameInput.SendKeys("Cancelled Room");
+
+        // Cancel
+        var cancelButton = Driver.FindElement(By.Id("cancel-room-btn"));
+        cancelButton.Click();
+        WaitForPageLoad();
+
+        // Assert - Modal should close and room should not be created
+        Driver.PageSource.Should().NotContain("Cancelled Room", "Cancelled room should not appear");
+        
+        // Modal should be closed
+        var exception = Assert.Throws<NoSuchElementException>(() => 
+            Driver.FindElement(By.Id("room-modal")));
+        exception.Should().NotBeNull("Modal should be closed");
+    }
+
+    [Fact]
+    public void Admin_Should_Edit_Existing_Room()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        // First create a room to edit
+        var uniqueName = $"Edit Test Room {DateTime.Now:yyyyMMddHHmmss}";
+        CreateTestRoom(uniqueName, "Classroom", 20, "Original notes");
+
+        // Act - Edit the room
+        var editButtons = Driver.FindElements(By.CssSelector("[id^='edit-room-']"));
+        if (editButtons.Count > 0)
+        {
+            editButtons[0].Click();
+            WaitForPageLoad();
+            Thread.Sleep(1000);
+
+            // Update room details
+            var nameInput = Driver.FindElement(By.Id("room-name-input"));
+            nameInput.Clear();
+            nameInput.SendKeys($"{uniqueName} EDITED");
+
+            var capacityInput = Driver.FindElement(By.Id("room-capacity-input"));
+            capacityInput.Clear();
+            capacityInput.SendKeys("30");
+
+            var notesInput = Driver.FindElement(By.Id("room-notes-input"));
+            notesInput.Clear();
+            notesInput.SendKeys("Updated notes for edited room");
+
+            // Submit changes
+            var saveButton = Driver.FindElement(By.Id("save-room-btn"));
+            saveButton.Click();
+            WaitForPageLoad();
+            Thread.Sleep(2000);
+
+            // Assert - Changes should be reflected
+            Driver.PageSource.Should().Contain($"{uniqueName} EDITED", "Updated room name should appear");
+            Driver.PageSource.Should().Contain("30", "Updated capacity should be displayed");
+        }
+    }
+
+    [Fact]
+    public void Admin_Should_Validate_Required_Room_Fields()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        // Act - Try to create room without required fields
+        var createButton = Driver.FindElement(By.Id("create-room-btn"));
+        createButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        // Try to submit without filling required fields
+        var saveButton = Driver.FindElement(By.Id("save-room-btn"));
+        saveButton.Click();
+        Thread.Sleep(1000);
+
+        // Assert - Should show validation errors (browser validation or custom)
+        var nameInput = Driver.FindElement(By.Id("room-name-input"));
+        nameInput.GetDomAttribute("required").Should().NotBeNull("Name field should be required");
+
+        var capacityInput = Driver.FindElement(By.Id("room-capacity-input"));
+        capacityInput.GetDomAttribute("required").Should().NotBeNull("Capacity field should be required");
+    }
+
+    [Fact]
+    public void Admin_Should_Create_Room_With_Different_Types()
+    {
+        // Arrange
+        LoginAsAdmin();
+        Driver.Navigate().GoToUrl($"{BaseUrl}/rooms");
+        WaitForPageLoad();
+
+        var roomTypes = new[] { "Classroom", "Lab", "Auditorium", "Library", "Gym", "Workshop", "Other" };
+        
+        foreach (var roomType in roomTypes.Take(3)) // Test first 3 to keep test reasonable
+        {
+            var uniqueName = $"{roomType} {DateTime.Now:yyyyMMddHHmmss}";
+
+            // Act - Create room with specific type
+            CreateTestRoom(uniqueName, roomType, 25, $"Test {roomType.ToLower()}");
+
+            // Assert - Room should appear with correct type
+            Driver.PageSource.Should().Contain(uniqueName, $"{roomType} room should be created");
+            Driver.PageSource.Should().Contain(roomType, $"Room type {roomType} should be displayed");
+        }
+    }
+
+    private void CreateTestRoom(string name, string roomType, int capacity, string notes)
+    {
+        var createButton = Driver.FindElement(By.Id("create-room-btn"));
+        createButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        var nameInput = Driver.FindElement(By.Id("room-name-input"));
+        nameInput.SendKeys(name);
+
+        var typeSelect = Driver.FindElement(By.Id("room-type-select"));
+        typeSelect.SendKeys(roomType);
+
+        var capacityInput = Driver.FindElement(By.Id("room-capacity-input"));
+        capacityInput.Clear();
+        capacityInput.SendKeys(capacity.ToString());
+
+        if (!string.IsNullOrEmpty(notes))
+        {
+            var notesInput = Driver.FindElement(By.Id("room-notes-input"));
+            notesInput.SendKeys(notes);
+        }
+
+        var saveButton = Driver.FindElement(By.Id("save-room-btn"));
+        saveButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+    }
+
+    #endregion
 
     #endregion
 }

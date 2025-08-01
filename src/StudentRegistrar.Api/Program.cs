@@ -41,6 +41,7 @@ builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IPaymentRepository
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.ICourseInstructorRepository, StudentRegistrar.Data.Repositories.CourseInstructorRepository>();
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IGradeRepository, StudentRegistrar.Data.Repositories.GradeRepository>();
 builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IEducatorRepository, StudentRegistrar.Data.Repositories.EducatorRepository>();
+builder.Services.AddScoped<StudentRegistrar.Data.Repositories.IRoomRepository, StudentRegistrar.Data.Repositories.RoomRepository>();
 
 // Add modernized application services
 builder.Services.AddScoped<IStudentService, StudentService>();
@@ -53,6 +54,7 @@ builder.Services.AddScoped<ICourseInstructorService, CourseInstructorService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
 builder.Services.AddScoped<IEducatorService, EducatorService>();
 builder.Services.AddScoped<IKeycloakService, KeycloakService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
 
 // Add HttpClient for Keycloak
 builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();

@@ -22,6 +22,7 @@ public class StudentRegistrarDbContext : DbContext
     public DbSet<CourseInstructor> CourseInstructors { get; set; }
     public DbSet<Educator> Educators { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<Room> Rooms { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -94,7 +95,6 @@ public class StudentRegistrarDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Code).HasMaxLength(50);
             entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.Room).HasMaxLength(50);
             entity.Property(e => e.MaxCapacity).IsRequired();
             entity.Property(e => e.Fee).HasPrecision(10, 2);
             entity.Property(e => e.PeriodCode).HasMaxLength(50);
@@ -107,6 +107,25 @@ public class StudentRegistrarDbContext : DbContext
                 .WithMany(s => s.Courses)
                 .HasForeignKey(e => e.SemesterId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Room)
+                .WithMany(r => r.Courses)
+                .HasForeignKey(e => e.RoomId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Room
+        modelBuilder.Entity<Room>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Capacity).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.RoomType).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.Name).IsUnique();
         });
 
         // Configure CourseInstructor
@@ -276,7 +295,7 @@ public class StudentRegistrarDbContext : DbContext
             .Where(e => e.Entity is GradeRecord || e.Entity is AcademicYear || e.Entity is User ||
                        e.Entity is AccountHolder || e.Entity is Semester || e.Entity is Student ||
                        e.Entity is Course || e.Entity is Enrollment || e.Entity is CourseInstructor ||
-                       e.Entity is Educator || e.Entity is Payment)
+                       e.Entity is Educator || e.Entity is Payment || e.Entity is Room)
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
         foreach (var entry in entries)
