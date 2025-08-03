@@ -35,6 +35,60 @@ public class AdminTests : BaseTest
         Driver.PageSource.Should().Contain("Semesters", "Admin should see Semesters link");
     }
 
+    [Fact]
+    public void Admin_Should_Create_Member_Successfully()
+    {
+        // Arrange - Login as admin
+        LoginAsAdmin();
+
+        // Act - Navigate to members page
+        var membersLink = Driver.FindElement(By.LinkText("Members"));
+        membersLink.Click();
+        WaitForPageLoad();
+        Thread.Sleep(1000);
+
+        // Assert - Should be on members page
+        Driver.Url.Should().Contain("/members", "Should navigate to members page");
+        Driver.PageSource.Should().Contain("Members Management", "Should see members management page");
+
+        // Click Create Member button
+        var createMemberButton = Driver.FindElement(By.Id("create-member-button"));
+        createMemberButton.Click();
+        Thread.Sleep(500);
+
+        // Fill in member form
+        var firstNameField = Driver.FindElement(By.Id("member-first-name"));
+        var lastNameField = Driver.FindElement(By.Id("member-last-name"));
+        var emailField = Driver.FindElement(By.Id("member-email"));
+        var mobilePhoneField = Driver.FindElement(By.Id("member-mobile-phone"));
+        var streetField = Driver.FindElement(By.Id("member-street"));
+        var cityField = Driver.FindElement(By.Id("member-city"));
+        var stateField = Driver.FindElement(By.Id("member-state"));
+
+        // Enter test member data
+        var timestamp = DateTime.Now.Ticks.ToString().Substring(10); // Last 8 digits for uniqueness
+        firstNameField.SendKeys("Test");
+        lastNameField.SendKeys($"Member{timestamp}");
+        emailField.SendKeys($"testmember{timestamp}@example.com");
+        mobilePhoneField.SendKeys("555-0123");
+        streetField.SendKeys("123 Test St");
+        cityField.SendKeys("TestCity");
+        stateField.SendKeys("CA");
+
+        // Submit the form
+        var submitButton = Driver.FindElement(By.Id("submit-create-member"));
+        submitButton.Click();
+        WaitForPageLoad();
+        Thread.Sleep(2000);
+
+        // Assert - Member should be created successfully
+        Driver.PageSource.Should().Contain("Member created successfully!", "Should show success message");
+        
+        // Verify the new member appears in the list
+        Driver.PageSource.Should().Contain($"Test Member{timestamp}", "New member should appear in the list");
+        Driver.PageSource.Should().Contain($"testmember{timestamp}@example.com", "Member email should appear in the list");
+    }
+
     // [Fact]
     // public void Admin_Should_Access_Student_Management()
     // {

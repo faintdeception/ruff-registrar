@@ -85,6 +85,17 @@ public class AccountHoldersController : ControllerBase
     }
 
     /// <summary>
+    /// Get all account holders (admin only)
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "Administrator")]
+    public async Task<ActionResult<IEnumerable<AccountHolderDto>>> GetAllAccountHolders()
+    {
+        var accountHolders = await _accountHolderService.GetAllAccountHoldersAsync();
+        return Ok(accountHolders);
+    }
+
+    /// <summary>
     /// Get account holder by ID (admin only)
     /// </summary>
     [HttpGet("{id:guid}")]

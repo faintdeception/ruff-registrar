@@ -113,6 +113,7 @@ public interface ICourseServiceV2
 
 public interface IAccountHolderService
 {
+    Task<IEnumerable<AccountHolderDto>> GetAllAccountHoldersAsync();
     Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string userId);
     Task<AccountHolderDto?> GetAccountHolderByIdAsync(Guid id);
     Task<AccountHolderDto> CreateAccountHolderAsync(CreateAccountHolderDto createDto);

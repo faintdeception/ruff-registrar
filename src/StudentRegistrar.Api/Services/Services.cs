@@ -291,6 +291,12 @@ public class AccountHolderService : IAccountHolderService
         _mapper = mapper;
     }
 
+    public async Task<IEnumerable<AccountHolderDto>> GetAllAccountHoldersAsync()
+    {
+        var accountHolders = await _accountHolderRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<AccountHolderDto>>(accountHolders);
+    }
+
     public async Task<AccountHolderDto?> GetAccountHolderByUserIdAsync(string userId)
     {
         var accountHolder = await _accountHolderRepository.GetByKeycloakUserIdAsync(userId);

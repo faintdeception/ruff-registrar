@@ -17,8 +17,8 @@ export default function Home() {
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalCourses: 0,
-    totalEnrollments: 0,
-    totalGrades: 0,
+    totalEducators: 0,
+    totalRooms: 0,
   });
 
   useEffect(() => {
@@ -27,8 +27,8 @@ export default function Home() {
     setStats({
       totalStudents: 25,
       totalCourses: 12,
-      totalEnrollments: 45,
-      totalGrades: 38,
+      totalEducators: 45,
+      totalRooms: 38,
     });
   }, []);
 
@@ -43,7 +43,7 @@ export default function Home() {
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             A comprehensive homeschool management system designed to help you 
-            track students, courses, enrollments, and grades with ease.
+            track students, courses, rooms, and educators with ease.
           </p>
         </div>
 
@@ -78,8 +78,8 @@ export default function Home() {
               <div className="flex items-center">
                 <ClipboardDocumentListIcon className="h-8 w-8 text-primary-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Enrollments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalEnrollments}</p>
+                  <p className="text-sm font-medium text-gray-600">Educators</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalEducators}</p>
                 </div>
               </div>
             </div>
@@ -90,8 +90,8 @@ export default function Home() {
               <div className="flex items-center">
                 <ChartBarIcon className="h-8 w-8 text-primary-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Grades Recorded</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalGrades}</p>
+                  <p className="text-sm font-medium text-gray-600">Rooms</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalRooms}</p>
                 </div>
               </div>
             </div>
@@ -120,22 +120,34 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/enrollments" className="group">
+          <Link href="/Educators" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <ClipboardDocumentListIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Enrollments</h3>
-                <p className="text-sm text-gray-600">Manage course enrollments</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Educators</h3>
+                <p className="text-sm text-gray-600">Manage course educators</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/grades" className="group">
+          {user?.roles?.includes('Administrator') && (
+            <Link href="/members" className="group">
+              <div className="card group-hover:shadow-lg transition-shadow">
+                <div className="card-body text-center">
+                  <UserCircleIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Members</h3>
+                  <p className="text-sm text-gray-600">Manage member accounts</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          <Link href="/rooms" className="group">
             <div className="card group-hover:shadow-lg transition-shadow">
               <div className="card-body text-center">
                 <ChartBarIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Grades</h3>
-                <p className="text-sm text-gray-600">View and manage grades</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Rooms</h3>
+                <p className="text-sm text-gray-600">View and manage rooms</p>
               </div>
             </div>
           </Link>
