@@ -218,7 +218,7 @@ const MembersPage: React.FC = () => {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Success Message */}
         {successMessage && (
-          <div id="success-message" className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div id="success-message" data-testid="success-message" className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-green-800">{successMessage}</p>
           </div>
         )}

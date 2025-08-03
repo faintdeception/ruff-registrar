@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
 using FluentAssertions;
 using StudentRegistrar.E2E.Tests.Base;
 using StudentRegistrar.E2E.Tests.Pages;
@@ -41,9 +42,9 @@ public class AdminTests : BaseTest
         // Arrange - Login as admin
         LoginAsAdmin();
 
-        // Act - Navigate to members page
-        var membersLink = Driver.FindElement(By.LinkText("Members"));
-        membersLink.Click();
+        // Act - Navigate to members page using test ID
+        var membersCard = Driver.FindElement(By.CssSelector("[data-testid='members-card']"));
+        membersCard.Click();
         WaitForPageLoad();
         Thread.Sleep(1000);
 
@@ -82,11 +83,58 @@ public class AdminTests : BaseTest
         Thread.Sleep(2000);
 
         // Assert - Member should be created successfully
-        Driver.PageSource.Should().Contain("Member created successfully!", "Should show success message");
+        // First check if there's an error message instead of success
+        var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(10));
         
-        // Verify the new member appears in the list
-        Driver.PageSource.Should().Contain($"Test Member{timestamp}", "New member should appear in the list");
-        Driver.PageSource.Should().Contain($"testmember{timestamp}@example.com", "Member email should appear in the list");
+        try 
+        {
+            // Wait for either success or error message to appear
+            var messageElement = wait.Until(driver => 
+            {
+                try 
+                {
+                    // Check for success message first
+                    var successElement = driver.FindElement(By.CssSelector("[data-testid='success-message']"));
+                    if (successElement.Displayed) return successElement;
+                    
+                    // Check for error message if no success
+                    var errorElement = driver.FindElement(By.Id("error-message"));
+                    if (errorElement.Displayed) return errorElement;
+                    
+                    return null;
+                }
+                catch (NoSuchElementException)
+                {
+                    return null;
+                }
+            });
+            
+            // Check what type of message we got
+            if (messageElement != null && messageElement.GetDomAttribute("data-testid") == "success-message")
+            {
+                messageElement.Text.Should().Contain("Member created successfully!", "Should show correct success message");
+                
+                // Verify the new member appears in the list
+                Driver.PageSource.Should().Contain($"Test Member{timestamp}", "New member should appear in the list");
+                Driver.PageSource.Should().Contain($"testmember{timestamp}@example.com", "Member email should appear in the list");
+            }
+            else if (messageElement != null && messageElement.GetDomAttribute("id") == "error-message")
+            {
+                var errorText = messageElement.Text;
+                throw new Exception($"Member creation failed with error: {errorText}");
+            }
+            else
+            {
+                throw new Exception("No recognizable success or error message found");
+            }
+        }
+        catch (WebDriverTimeoutException)
+        {
+            // If no message appears, fail with more helpful information
+            var currentUrl = Driver.Url;
+            var pageTitle = Driver.Title;
+            throw new Exception($"No success or error message appeared after member creation. Current URL: {currentUrl}, Page Title: {pageTitle}");
+        }
     }
 
     // [Fact]

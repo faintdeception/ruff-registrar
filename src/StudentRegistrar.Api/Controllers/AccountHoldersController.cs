@@ -12,13 +12,16 @@ namespace StudentRegistrar.Api.Controllers;
 public class AccountHoldersController : ControllerBase
 {
     private readonly IAccountHolderService _accountHolderService;
+    private readonly IKeycloakService _keycloakService;
     private readonly ILogger<AccountHoldersController> _logger;
 
     public AccountHoldersController(
         IAccountHolderService accountHolderService,
+        IKeycloakService keycloakService,
         ILogger<AccountHoldersController> logger)
     {
         _accountHolderService = accountHolderService;
+        _keycloakService = keycloakService;
         _logger = logger;
     }
 
@@ -125,12 +128,29 @@ public class AccountHoldersController : ControllerBase
 
         try
         {
-            var accountHolder = await _accountHolderService.CreateAccountHolderAsync(createDto);
+            _logger.LogInformation("Creating new account holder for email: {Email}", createDto.EmailAddress);
+            
+            // First create user in Keycloak to get a unique Keycloak ID
+            var createUserRequest = new CreateUserRequest
+            {
+                Email = createDto.EmailAddress,
+                FirstName = createDto.FirstName,
+                LastName = createDto.LastName
+            };
+            
+            _logger.LogInformation("Creating Keycloak user for: {Email}", createUserRequest.Email);
+            var keycloakUserId = await _keycloakService.CreateUserAsync(createUserRequest);
+            _logger.LogInformation("Created Keycloak user with ID: {KeycloakId}", keycloakUserId);
+            
+            // Then create the account holder with the Keycloak ID
+            var accountHolder = await _accountHolderService.CreateAccountHolderAsync(createDto, keycloakUserId);
+            _logger.LogInformation("Successfully created account holder with ID: {AccountHolderId}", accountHolder.Id);
+            
             return CreatedAtAction(nameof(GetAccountHolder), new { id = accountHolder.Id }, accountHolder);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating account holder");
+            _logger.LogError(ex, "Error creating account holder for email: {Email}", createDto.EmailAddress);
             return StatusCode(500, "An error occurred while creating the account holder");
         }
     }

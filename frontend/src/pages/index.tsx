@@ -131,7 +131,7 @@ export default function Home() {
           </Link>
 
           {user?.roles?.includes('Administrator') && (
-            <Link href="/members" className="group">
+            <Link href="/members" className="group" data-testid="members-card">
               <div className="card group-hover:shadow-lg transition-shadow">
                 <div className="card-body text-center">
                   <UserCircleIcon className="h-12 w-12 text-primary-600 mx-auto mb-4" />
