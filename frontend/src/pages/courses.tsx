@@ -104,6 +104,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     fetchSemesters();
+    fetchAvailableRooms(); // Load rooms once when component mounts
   }, []);
 
   useEffect(() => {
@@ -223,18 +224,14 @@ export default function CoursesPage() {
     }
   }, []);
 
-  const fetchAvailableRooms = useCallback(async (minCapacity: number = 0) => {
+  const fetchAvailableRooms = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
         throw new Error('No authentication token found');
       }
 
-      const url = minCapacity > 0 
-        ? `/api/courses/available-rooms?minCapacity=${minCapacity}`
-        : '/api/courses/available-rooms';
-
-      const response = await fetch(url, {
+      const response = await fetch('/api/rooms', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -242,7 +239,7 @@ export default function CoursesPage() {
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to fetch available rooms';
+        let errorMessage = 'Failed to fetch rooms';
         try {
           const errorData = await response.json();
           if (errorData.message) {
@@ -259,17 +256,21 @@ export default function CoursesPage() {
       // Only clear error if there was one - avoid unnecessary state updates
       setRoomError(prevError => prevError ? null : prevError);
     } catch (err) {
-      console.error('Error fetching available rooms:', err);
-      setRoomError(err instanceof Error ? err.message : 'Failed to fetch available rooms');
+      console.error('Error fetching rooms:', err);
+      setRoomError(err instanceof Error ? err.message : 'Failed to fetch rooms');
     }
   }, []);
+
+  // Function to refresh rooms when needed (e.g., after room changes)
+  const refreshRooms = useCallback(() => {
+    fetchAvailableRooms();
+  }, [fetchAvailableRooms]);
 
   const openEditModal = useCallback(async (course: Course) => {
     setEditingCourse(course);
     setShowEditModal(true);
     await fetchAvailableMembers();
-    await fetchAvailableRooms(course.maxCapacity);
-  }, [fetchAvailableMembers, fetchAvailableRooms]);
+  }, [fetchAvailableMembers]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -788,13 +789,6 @@ export default function CoursesPage() {
       endTime: '',
       ageGroup: ''
     });
-
-    // Effect to fetch rooms when modal opens and when capacity changes
-    // useEffect(() => {
-    //   if (showCreateModal) {
-    //     fetchAvailableRooms(formData.maxCapacity);
-    //   }
-    // }, [showCreateModal, formData.maxCapacity]);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();

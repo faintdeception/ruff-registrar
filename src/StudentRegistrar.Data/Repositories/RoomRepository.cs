@@ -41,14 +41,6 @@ public class RoomRepository : IRoomRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Room>> GetAvailableRoomsAsync(int minCapacity)
-    {
-        return await _context.Rooms
-            .Where(r => r.Capacity >= minCapacity)
-            .OrderBy(r => r.Name)
-            .ToListAsync();
-    }
-
     public async Task<Room> CreateAsync(Room room)
     {
         room.CreatedAt = DateTime.UtcNow;

@@ -118,31 +118,6 @@ public class RoomsControllerTests
     }
 
     [Fact]
-    public async Task GetAvailableRooms_Should_ReturnOkWithFilteredRooms()
-    {
-        // Arrange
-        var minCapacity = 25;
-        var expectedRooms = new List<RoomDto>
-        {
-            new() { Id = Guid.NewGuid(), Name = "Large Room", Capacity = 30, RoomType = RoomType.Classroom, CourseCount = 1 },
-            new() { Id = Guid.NewGuid(), Name = "Auditorium", Capacity = 100, RoomType = RoomType.Auditorium, CourseCount = 0 }
-        };
-
-        _mockRoomService
-            .Setup(s => s.GetAvailableRoomsAsync(minCapacity))
-            .Returns(Task.FromResult<IEnumerable<RoomDto>>(expectedRooms));
-
-        // Act
-        var result = await _controller.GetAvailableRooms(minCapacity);
-
-        // Assert
-        var actionResult = result.Result;
-        actionResult.Should().BeOfType<OkObjectResult>();
-        var okResult = actionResult as OkObjectResult;
-        okResult!.Value.Should().BeEquivalentTo(expectedRooms);
-    }
-
-    [Fact]
     public async Task CreateRoom_Should_ReturnCreatedAtAction_WhenValidDto()
     {
         // Arrange

@@ -268,11 +268,6 @@ public class CourseServiceV2 : ICourseServiceV2
         return _mapper.Map<IEnumerable<AccountHolderDto>>(accountHolders);
     }
 
-    public async Task<IEnumerable<RoomDto>> GetAvailableRoomsAsync(int minCapacity = 0)
-    {
-        var rooms = await _roomRepository.GetAvailableRoomsAsync(minCapacity);
-        return _mapper.Map<IEnumerable<RoomDto>>(rooms);
-    }
 }
 
 public class AccountHolderService : IAccountHolderService
@@ -799,12 +794,6 @@ public class RoomService : IRoomService
     public async Task<IEnumerable<RoomDto>> GetRoomsByTypeAsync(RoomType roomType)
     {
         var rooms = await _roomRepository.GetByTypeAsync(roomType);
-        return _mapper.Map<IEnumerable<RoomDto>>(rooms);
-    }
-
-    public async Task<IEnumerable<RoomDto>> GetAvailableRoomsAsync(int minCapacity)
-    {
-        var rooms = await _roomRepository.GetAvailableRoomsAsync(minCapacity);
         return _mapper.Map<IEnumerable<RoomDto>>(rooms);
     }
 

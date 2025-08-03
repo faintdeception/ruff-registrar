@@ -159,12 +159,4 @@ public class CoursesController : ControllerBase
         var members = await _courseService.GetAvailableMembersAsync();
         return Ok(members);
     }
-
-    // Endpoint to get available rooms for a course based on capacity
-    [HttpGet("available-rooms")]
-    public async Task<ActionResult<IEnumerable<RoomDto>>> GetAvailableRooms([FromQuery] int minCapacity = 0)
-    {
-        var rooms = await _courseService.GetAvailableRoomsAsync(minCapacity);
-        return Ok(rooms);
-    }
 }

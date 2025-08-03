@@ -70,21 +70,6 @@ public class RoomsController : ControllerBase
         }
     }
 
-    [HttpGet("available")]
-    public async Task<ActionResult<IEnumerable<RoomDto>>> GetAvailableRooms([FromQuery] int minCapacity = 1)
-    {
-        try
-        {
-            var rooms = await _roomService.GetAvailableRoomsAsync(minCapacity);
-            return Ok(rooms);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving available rooms with capacity {MinCapacity}", minCapacity);
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
     [HttpPost]
     [Authorize(Roles = "Administrator")]
     public async Task<ActionResult<RoomDto>> CreateRoom(CreateRoomDto createDto)

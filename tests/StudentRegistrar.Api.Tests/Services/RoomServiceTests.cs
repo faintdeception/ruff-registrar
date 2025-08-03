@@ -125,38 +125,6 @@ public class RoomServiceTests
     }
 
     [Fact]
-    public async Task GetAvailableRoomsAsync_Should_ReturnFilteredMappedRooms()
-    {
-        // Arrange
-        var minCapacity = 25;
-        var rooms = new List<Room>
-        {
-            new() { Id = Guid.NewGuid(), Name = "Large Room", Capacity = 30, RoomType = RoomType.Classroom },
-            new() { Id = Guid.NewGuid(), Name = "Auditorium", Capacity = 100, RoomType = RoomType.Auditorium }
-        };
-
-        var expectedDtos = new List<RoomDto>
-        {
-            new() { Id = rooms[0].Id, Name = "Large Room", Capacity = 30, RoomType = RoomType.Classroom, CourseCount = 0 },
-            new() { Id = rooms[1].Id, Name = "Auditorium", Capacity = 100, RoomType = RoomType.Auditorium, CourseCount = 0 }
-        };
-
-        _mockRepository
-            .Setup(r => r.GetAvailableRoomsAsync(minCapacity))
-            .Returns(Task.FromResult<IEnumerable<Room>>(rooms));
-
-        _mockMapper
-            .Setup(m => m.Map<IEnumerable<RoomDto>>(rooms))
-            .Returns(expectedDtos);
-
-        // Act
-        var result = await _service.GetAvailableRoomsAsync(minCapacity);
-
-        // Assert
-        result.Should().BeEquivalentTo(expectedDtos);
-    }
-
-    [Fact]
     public async Task CreateRoomAsync_Should_CreateAndReturnMappedRoom_WhenNameIsUnique()
     {
         // Arrange

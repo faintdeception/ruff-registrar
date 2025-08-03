@@ -8,7 +8,6 @@ public interface IRoomRepository
     Task<Room?> GetByNameAsync(string name);
     Task<IEnumerable<Room>> GetAllAsync();
     Task<IEnumerable<Room>> GetByTypeAsync(RoomType roomType);
-    Task<IEnumerable<Room>> GetAvailableRoomsAsync(int minCapacity);
     Task<Room> CreateAsync(Room room);
     Task<Room> UpdateAsync(Room room);
     Task<bool> DeleteAsync(Guid id);
