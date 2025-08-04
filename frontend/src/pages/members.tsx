@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { PlusIcon, XMarkIcon, UserIcon, PhoneIcon, EnvelopeIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, UserIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, ClipboardDocumentIcon, EyeIcon, EyeSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface Member {
   id: string;
@@ -32,6 +32,18 @@ interface Member {
   lastEdit: string;
   students: any[];
   payments: any[];
+}
+
+interface UserCredentials {
+  username: string;
+  temporaryPassword: string;
+  mustChangePassword: boolean;
+}
+
+interface CreateMemberResponse {
+  accountHolder: Member;
+  credentials?: UserCredentials;
+  message: string;
 }
 
 interface CreateMemberForm {
@@ -65,6 +77,8 @@ const MembersPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [newMemberCredentials, setNewMemberCredentials] = useState<UserCredentials | null>(null);
+  const [showCredentials, setShowCredentials] = useState(false);
   const [newMember, setNewMember] = useState<CreateMemberForm>({
     firstName: '',
     lastName: '',
@@ -168,12 +182,24 @@ const MembersPage: React.FC = () => {
         throw new Error(errorData.message || 'Failed to create member');
       }
 
+      const data: CreateMemberResponse = await response.json();
+      
       // Refresh members list
       fetchMembers();
       
-      // Show success message
-      setSuccessMessage('Member created successfully!');
-      setTimeout(() => setSuccessMessage(null), 5000);
+      // Handle credentials if provided
+      if (data.credentials) {
+        setNewMemberCredentials(data.credentials);
+        setShowCredentials(true);
+        setSuccessMessage(`Member created successfully! ${data.message}`);
+      } else {
+        setSuccessMessage(data.message || 'Member created successfully!');
+      }
+      
+      // Auto-hide success message after 10 seconds if no credentials
+      if (!data.credentials) {
+        setTimeout(() => setSuccessMessage(null), 10000);
+      }
       
       // Reset form
       setNewMember({
@@ -205,6 +231,29 @@ const MembersPage: React.FC = () => {
     }
   };
 
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setSuccessMessage(`${type} copied to clipboard!`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError(`Failed to copy ${type.toLowerCase()} to clipboard`);
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const clearCredentials = () => {
+    setNewMemberCredentials(null);
+    setShowCredentials(false);
+    setSuccessMessage(null);
+  };
+
+  const copyBothCredentials = async () => {
+    if (!newMemberCredentials) return;
+    const credentialsText = `Username: ${newMemberCredentials.username}\nTemporary Password: ${newMemberCredentials.temporaryPassword}`;
+    await copyToClipboard(credentialsText, 'Credentials');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -220,6 +269,92 @@ const MembersPage: React.FC = () => {
         {successMessage && (
           <div id="success-message" data-testid="success-message" className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
+
+        {/* New Member Credentials Display */}
+        {showCredentials && newMemberCredentials && (
+          <div className="mb-6 p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-2" />
+                <h4 className="text-lg font-medium text-yellow-800">Member Account Created</h4>
+              </div>
+              <button
+                onClick={clearCredentials}
+                className="text-yellow-600 hover:text-yellow-800"
+                title="Clear credentials"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="bg-white p-4 rounded-md border border-yellow-300 mb-4">
+              <h5 className="font-medium text-gray-900 mb-3">Login Credentials</h5>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Username</label>
+                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{newMemberCredentials.username}</code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(newMemberCredentials.username, 'Username')}
+                    className="ml-2 p-1 text-gray-500 hover:text-gray-700"
+                    title="Copy username"
+                  >
+                    <ClipboardDocumentIcon className="h-4 w-4" />
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Temporary Password</label>
+                    <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
+                      {newMemberCredentials.temporaryPassword}
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(newMemberCredentials.temporaryPassword, 'Password')}
+                    className="ml-2 p-1 text-gray-500 hover:text-gray-700"
+                    title="Copy password"
+                  >
+                    <ClipboardDocumentIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex space-x-3">
+                <button
+                  onClick={copyBothCredentials}
+                  className="inline-flex items-center px-3 py-2 border border-yellow-300 rounded-md text-sm font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
+                >
+                  <ClipboardDocumentIcon className="h-4 w-4 mr-2" />
+                  Copy Both
+                </button>
+                <button
+                  onClick={clearCredentials}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="flex">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mt-0.5 mr-2" />
+                <div className="text-sm text-red-700">
+                  <p className="font-medium mb-1">Security Notice:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Share these credentials securely with the member (phone, in-person, etc.)</li>
+                    <li>The member must change their password on first login</li>
+                    <li>Do not send credentials via email or unsecured channels</li>
+                    <li>These credentials will only be shown once</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         
