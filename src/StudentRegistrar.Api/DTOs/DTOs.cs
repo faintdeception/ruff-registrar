@@ -248,6 +248,14 @@ public class CreateUserRequest
     public UserProfileDto? Profile { get; set; }
 }
 
+public class CreateUserResponse
+{
+    public string UserId { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+    public string? TemporaryPassword { get; set; }
+    public bool IsTemporary { get; set; }
+}
+
 public class UserDto
 {
     public Guid Id { get; set; }
@@ -514,6 +522,20 @@ public class CreateAccountHolderDto
     
     public AddressInfo? AddressJson { get; set; }
     public EmergencyContactInfo? EmergencyContactJson { get; set; }
+}
+
+public class CreateAccountHolderResponse
+{
+    public AccountHolderDto AccountHolder { get; set; } = null!;
+    public UserCredentials? Credentials { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
+public class UserCredentials
+{
+    public string Username { get; set; } = string.Empty;
+    public string TemporaryPassword { get; set; } = string.Empty;
+    public bool MustChangePassword { get; set; } = true;
 }
 
 public class UpdateAccountHolderDto

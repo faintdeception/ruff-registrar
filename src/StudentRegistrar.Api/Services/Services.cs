@@ -688,25 +688,72 @@ public class KeycloakService : IKeycloakService
         _logger = logger;
     }
 
-    public async Task<string> CreateUserAsync(CreateUserRequest request)
+    public async Task<CreateUserResponse> CreateUserAsync(CreateUserRequest request)
     {
         try
         {
             // TODO: Implement actual Keycloak API integration
-            // For now, return a mock Keycloak ID
+            // For now, return a mock response with generated password
             _logger.LogInformation("Creating user with email: {Email}", request.Email);
+            
+            // Simulate async operation
+            await Task.Delay(10);
+            
+            // Generate a secure temporary password
+            var temporaryPassword = GenerateTemporaryPassword();
             
             // This would be replaced with actual Keycloak REST API calls
             var mockKeycloakId = Guid.NewGuid().ToString();
             _logger.LogInformation("Created user with Keycloak ID: {KeycloakId}", mockKeycloakId);
             
-            return mockKeycloakId;
+            return new CreateUserResponse
+            {
+                UserId = mockKeycloakId,
+                Username = request.Email,
+                TemporaryPassword = temporaryPassword,
+                IsTemporary = true
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create user in Keycloak for email: {Email}", request.Email);
             throw;
         }
+    }
+
+    private string GenerateTemporaryPassword()
+    {
+        // Generate a cryptographically secure temporary password
+        const string uppercaseChars = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // Exclude I, O
+        const string lowercaseChars = "abcdefghjkmnpqrstuvwxyz"; // Exclude i, l, o
+        const string digitChars = "23456789"; // Exclude 0, 1
+        const string specialChars = "!@#$%&*";
+        
+        var random = new Random();
+        var password = new StringBuilder();
+        
+        // Ensure at least one character from each category
+        password.Append(uppercaseChars[random.Next(uppercaseChars.Length)]);
+        password.Append(lowercaseChars[random.Next(lowercaseChars.Length)]);
+        password.Append(digitChars[random.Next(digitChars.Length)]);
+        password.Append(specialChars[random.Next(specialChars.Length)]);
+        
+        // Fill the rest with random characters from all categories
+        const string allChars = uppercaseChars + lowercaseChars + digitChars + specialChars;
+        for (int i = 4; i < 14; i++) // Total length 14 characters
+        {
+            password.Append(allChars[random.Next(allChars.Length)]);
+        }
+        
+        // Shuffle the password to avoid predictable patterns
+        var chars = password.ToString().ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+        {
+            int randomIndex = random.Next(chars.Length);
+            (chars[i], chars[randomIndex]) = (chars[randomIndex], chars[i]);
+        }
+        
+        return new string(chars);
     }
 
     public async Task UpdateUserRoleAsync(string keycloakId, UserRole role)

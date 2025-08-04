@@ -90,11 +90,11 @@ public class UsersController : ControllerBase
             }
 
             // Create user in Keycloak first
-            var keycloakUserId = await _keycloakService.CreateUserAsync(request);
+            var keycloakUserResponse = await _keycloakService.CreateUserAsync(request);
             
             // Create user in our database
             var user = _mapper.Map<User>(request);
-            user.KeycloakId = keycloakUserId;
+            user.KeycloakId = keycloakUserResponse.UserId;
             
             _context.Users.Add(user);
             await _context.SaveChangesAsync();

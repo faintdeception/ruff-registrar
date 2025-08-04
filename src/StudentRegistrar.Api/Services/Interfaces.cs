@@ -50,7 +50,7 @@ public interface IGradeService
 
 public interface IKeycloakService
 {
-    Task<string> CreateUserAsync(CreateUserRequest request);
+    Task<CreateUserResponse> CreateUserAsync(CreateUserRequest request);
     Task UpdateUserRoleAsync(string keycloakId, UserRole role);
     Task DeactivateUserAsync(string keycloakId);
     Task<bool> UserExistsAsync(string email);
